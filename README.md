@@ -1,6 +1,6 @@
 # Hyprland Dotfiles
 
-Private CachyOS/Arch desktop snapshot centered on Hyprland and a customized
+My CachyOS/Arch desktop snapshot centered on Hyprland and a customized
 Tide Island shell. The installer backs up conflicts, links the tracked files
 into the target home, and keeps machine-specific display state out of Git.
 
