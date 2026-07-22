@@ -26,7 +26,7 @@ Install the tools needed to clone a private LFS repository:
 ```bash
 sudo pacman -S --needed git git-lfs base-devel
 git lfs install
-git clone git@github.com:YOUR_GITHUB_USER/hyprland-dotfiles.git
+git clone https://github.com/Maus21/hyprland-dotfiles.git
 cd hyprland-dotfiles
 git lfs pull
 ./install.sh --dry-run
