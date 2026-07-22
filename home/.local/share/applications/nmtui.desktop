@@ -1,0 +1,12 @@
+[Desktop Entry]
+Type=Application
+Version=1.0
+Name=NetworkManager TUI
+GenericName=Network Configuration
+Comment=Configure network connections in the terminal
+Exec=nmtui
+TryExec=nmtui
+Icon=network-wireless
+Terminal=true
+Categories=Network;ConsoleOnly;
+Keywords=nmtui;networkmanager;network;wifi;ethernet;connection;tui;

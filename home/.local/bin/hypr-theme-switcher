@@ -1,0 +1,503 @@
+#!/usr/bin/env bash
+set -u
+
+themes_dir="$HOME/.config/hypr/themes"
+state_dir="$HOME/.cache/hypr-theme-switcher"
+current_file="$state_dir/current"
+wallpaper_file="$state_dir/current-wallpaper"
+
+mkdir -p "$state_dir"
+
+theme_file() {
+	case "$1" in
+		default | "Default") printf '%s/default.theme\n' "$themes_dir" ;;
+		tokyo | "Tokyo Night") printf '%s/tokyo.theme\n' "$themes_dir" ;;
+		nord | "Nord") printf '%s/nord.theme\n' "$themes_dir" ;;
+		everforest | "Everforest") printf '%s/everforest.theme\n' "$themes_dir" ;;
+		kanagawa | "Kanagawa" | "Kanagawa Wave" | yousai | "Yousai" | race | "Race Track") printf '%s/kanagawa.theme\n' "$themes_dir" ;;
+		crimson | "Crimson" | "Crimson Night" | catppuccin | "Catppuccin" | "Catppuccin Mocha" | diner | "Rain Diner") printf '%s/catppuccin.theme\n' "$themes_dir" ;;
+		*)
+			# Theme ids are also file names.  Keeping this generic means a new
+			# foo.theme automatically participates in every generated palette.
+			case "$1" in
+				*[!A-Za-z0-9_-]* | "") return 1 ;;
+			esac
+			[ -f "$themes_dir/$1.theme" ] || return 1
+			printf '%s/%s.theme\n' "$themes_dir" "$1"
+			;;
+	esac
+}
+
+load_theme() {
+	local file
+
+	file="$(theme_file "$1")" || return 1
+	# shellcheck source=/dev/null
+	. "$file"
+
+	# Shared semantic roles.  A theme may override any TIDE_* role; the
+	# terminal palette remains the compatibility contract for a
+	# minimal or newly added theme.
+	TIDE_PANEL="${TIDE_PANEL:-$TERM_BG}"
+	TIDE_MODULE="${TIDE_MODULE:-$TERM_BLACK}"
+	TIDE_HOVER="${TIDE_HOVER:-$TERM_BRIGHT_BLACK}"
+	TIDE_BORDER="${TIDE_BORDER:-$TERM_BRIGHT_BLACK}"
+	TIDE_ACCENT="${TIDE_ACCENT:-$TERM_BLUE}"
+	TIDE_ACCENT_ALT="${TIDE_ACCENT_ALT:-$TERM_MAGENTA}"
+	TIDE_TEXT="${TIDE_TEXT:-$TERM_FG}"
+	TIDE_TEXT_MUTED="${TIDE_TEXT_MUTED:-$TERM_BRIGHT_BLACK}"
+	TIDE_SELECTED_TEXT="${TIDE_SELECTED_TEXT:-$TERM_BG}"
+	TIDE_ERROR="${TIDE_ERROR:-$TERM_RED}"
+	TIDE_WARNING="${TIDE_WARNING:-$TERM_YELLOW}"
+	TIDE_SUCCESS="${TIDE_SUCCESS:-$TERM_GREEN}"
+	TIDE_INFO="${TIDE_INFO:-$TERM_BLUE}"
+
+	# Future themes inherit the intentionally faint 1px window treatment.
+	HYPR_ACTIVE_BORDER="${HYPR_ACTIVE_BORDER:-rgba(${TIDE_ACCENT#\#}33) rgba(${TIDE_ACCENT_ALT#\#}33) rgba(${TIDE_INFO#\#}33) 45deg}"
+	HYPR_INACTIVE_BORDER="${HYPR_INACTIVE_BORDER:-rgba(${TIDE_BORDER#\#}1f)}"
+	HYPR_BORDER_SIZE="${HYPR_BORDER_SIZE:-1}"
+}
+
+render_tide_palette() {
+	cat <<EOF
+{
+  "themeId": "${THEME_ID}",
+  "themeName": "${THEME_NAME}",
+  "panel": "${TIDE_PANEL}",
+  "module": "${TIDE_MODULE}",
+  "hover": "${TIDE_HOVER}",
+  "border": "${TIDE_BORDER}",
+  "accent": "${TIDE_ACCENT}",
+  "accentAlt": "${TIDE_ACCENT_ALT}",
+  "text": "${TIDE_TEXT}",
+  "muted": "${TIDE_TEXT_MUTED}",
+  "selectedText": "${TIDE_SELECTED_TEXT}",
+  "error": "${TIDE_ERROR}",
+  "warning": "${TIDE_WARNING}",
+  "success": "${TIDE_SUCCESS}",
+  "info": "${TIDE_INFO}"
+}
+EOF
+}
+
+write_tide_palette() {
+	local palette_file="$state_dir/palette.json"
+	local palette_tmp="$state_dir/palette.json.tmp"
+
+	render_tide_palette > "$palette_tmp"
+	mv "$palette_tmp" "$palette_file"
+}
+
+write_kitty_theme() {
+	cat > "$HOME/.config/kitty/theme-current.conf" <<EOF
+background            ${TERM_BG}
+foreground            ${TERM_FG}
+selection_background  ${TERM_SELECTION_BG}
+selection_foreground  ${TERM_SELECTION_FG}
+cursor                ${TERM_CURSOR}
+cursor_text_color     ${TERM_BG}
+
+color0                ${TERM_BLACK}
+color1                ${TERM_RED}
+color2                ${TERM_GREEN}
+color3                ${TERM_YELLOW}
+color4                ${TERM_BLUE}
+color5                ${TERM_MAGENTA}
+color6                ${TERM_CYAN}
+color7                ${TERM_WHITE}
+color8                ${TERM_BRIGHT_BLACK}
+color9                ${TERM_BRIGHT_RED}
+color10               ${TERM_BRIGHT_GREEN}
+color11               ${TERM_BRIGHT_YELLOW}
+color12               ${TERM_BRIGHT_BLUE}
+color13               ${TERM_BRIGHT_MAGENTA}
+color14               ${TERM_BRIGHT_CYAN}
+color15               ${TERM_BRIGHT_WHITE}
+EOF
+}
+
+write_neovim_theme() {
+	local theme_file="$state_dir/nvim-theme.lua"
+	local temp_file="${theme_file}.tmp.$$"
+	local accent="${TIDE_ACCENT:-$TERM_MAGENTA}"
+	local accent_alt="${TIDE_ACCENT_ALT:-$TERM_BLUE}"
+	local accent_warn="${TIDE_WARNING:-$TERM_YELLOW}"
+	local surface="$TERM_BLACK"
+	local surface_alt="$TERM_BRIGHT_BLACK"
+
+	if [ "$MODE" = "light" ]; then
+		surface="$TERM_WHITE"
+		surface_alt="$TERM_BRIGHT_WHITE"
+	fi
+
+	cat > "$temp_file" <<EOF
+return {
+  id = "${THEME_ID}",
+  name = "${THEME_NAME}",
+  mode = "${MODE}",
+  bg = "${TERM_BG}",
+  fg = "${TERM_FG}",
+  cursor = "${TERM_CURSOR}",
+  selection_bg = "${TERM_SELECTION_BG}",
+  selection_fg = "${TERM_SELECTION_FG}",
+  surface = "${surface}",
+  surface_alt = "${surface_alt}",
+  muted = "${TIDE_TEXT_MUTED:-$TERM_BRIGHT_BLACK}",
+  accent = "${accent}",
+  accent_alt = "${accent_alt}",
+  warn = "${accent_warn}",
+  red = "${TERM_RED}",
+  green = "${TERM_GREEN}",
+  yellow = "${TERM_YELLOW}",
+  blue = "${TERM_BLUE}",
+  magenta = "${TERM_MAGENTA}",
+  cyan = "${TERM_CYAN}",
+  white = "${TERM_WHITE}",
+  ansi = {
+    "${TERM_BLACK}", "${TERM_RED}", "${TERM_GREEN}", "${TERM_YELLOW}",
+    "${TERM_BLUE}", "${TERM_MAGENTA}", "${TERM_CYAN}", "${TERM_WHITE}",
+    "${TERM_BRIGHT_BLACK}", "${TERM_BRIGHT_RED}", "${TERM_BRIGHT_GREEN}", "${TERM_BRIGHT_YELLOW}",
+    "${TERM_BRIGHT_BLUE}", "${TERM_BRIGHT_MAGENTA}", "${TERM_BRIGHT_CYAN}", "${TERM_BRIGHT_WHITE}",
+  },
+}
+EOF
+	mv -f "$temp_file" "$theme_file"
+}
+
+write_gtk_settings() {
+	local prefer_dark="false"
+	local selected_fg="${TIDE_SELECTED_TEXT:-$TERM_BG}"
+	local accent="${TIDE_ACCENT:-$TERM_BLUE}"
+	local accent_alt="${TIDE_ACCENT_ALT:-$TERM_MAGENTA}"
+	local header_bg="${GTK_HEADER_BG:-${TIDE_HOVER:-$TERM_BLACK}}"
+	local header_bg_inactive="${GTK_HEADER_BG_INACTIVE:-${TIDE_MODULE:-$TERM_BLACK}}"
+	local header_border="${GTK_HEADER_BORDER:-$accent}"
+
+	if [ "$MODE" = "dark" ]; then
+		prefer_dark="true"
+	fi
+
+	mkdir -p "$HOME/.config/gtk-3.0" "$HOME/.config/gtk-4.0"
+
+	for gtk_dir in "$HOME/.config/gtk-3.0" "$HOME/.config/gtk-4.0"; do
+		cat > "$gtk_dir/colors.css" <<EOF
+/* Generated by hypr-theme-switcher for ${THEME_NAME}. */
+@define-color theme_fg_color ${TERM_FG};
+@define-color theme_text_color ${TERM_FG};
+@define-color theme_bg_color ${TERM_BG};
+@define-color theme_base_color ${TERM_BG};
+@define-color theme_selected_bg_color ${accent};
+@define-color theme_selected_fg_color ${selected_fg};
+@define-color theme_unfocused_fg_color ${WAYBAR_INACTIVE};
+@define-color theme_unfocused_text_color ${WAYBAR_INACTIVE};
+@define-color theme_unfocused_bg_color ${TERM_BG};
+@define-color theme_unfocused_base_color ${TERM_BG};
+@define-color theme_unfocused_selected_bg_color ${accent_alt};
+@define-color theme_unfocused_selected_fg_color ${selected_fg};
+@define-color insensitive_fg_color ${WAYBAR_INACTIVE};
+@define-color insensitive_bg_color ${TERM_BLACK};
+@define-color insensitive_base_color ${TERM_BLACK};
+@define-color insensitive_base_fg_color ${WAYBAR_INACTIVE};
+@define-color borders ${TERM_BRIGHT_BLACK};
+@define-color unfocused_borders ${TERM_BLACK};
+@define-color warning_color ${TERM_YELLOW};
+@define-color error_color ${TERM_RED};
+@define-color success_color ${TERM_GREEN};
+@define-color link_color ${TERM_BLUE};
+@define-color link_visited_color ${TERM_MAGENTA};
+@define-color content_view_bg ${TERM_BG};
+@define-color tooltip_background ${TERM_BLACK};
+@define-color tooltip_text ${TERM_FG};
+@define-color theme_button_background_normal ${TERM_BLACK};
+@define-color theme_button_foreground_normal ${TERM_FG};
+@define-color theme_button_decoration_hover ${accent};
+@define-color theme_button_decoration_focus ${accent};
+@define-color theme_header_background ${header_bg};
+@define-color theme_header_foreground ${TERM_FG};
+@define-color theme_titlebar_background ${header_bg};
+@define-color theme_titlebar_foreground ${TERM_FG};
+
+@define-color theme_fg_color_breeze ${TERM_FG};
+@define-color theme_text_color_breeze ${TERM_FG};
+@define-color theme_bg_color_breeze ${TERM_BG};
+@define-color theme_base_color_breeze ${TERM_BG};
+@define-color theme_selected_bg_color_breeze ${accent};
+@define-color theme_selected_fg_color_breeze ${selected_fg};
+@define-color theme_unfocused_fg_color_breeze ${WAYBAR_INACTIVE};
+@define-color theme_unfocused_text_color_breeze ${WAYBAR_INACTIVE};
+@define-color theme_unfocused_bg_color_breeze ${TERM_BG};
+@define-color theme_unfocused_base_color_breeze ${TERM_BG};
+@define-color theme_unfocused_selected_bg_color_breeze ${accent_alt};
+@define-color theme_unfocused_selected_bg_color_alt_breeze ${accent_alt};
+@define-color theme_unfocused_selected_fg_color_breeze ${selected_fg};
+@define-color insensitive_fg_color_breeze ${WAYBAR_INACTIVE};
+@define-color insensitive_bg_color_breeze ${TERM_BLACK};
+@define-color insensitive_base_color_breeze ${TERM_BLACK};
+@define-color insensitive_base_fg_color_breeze ${WAYBAR_INACTIVE};
+@define-color insensitive_selected_bg_color_breeze ${TERM_BRIGHT_BLACK};
+@define-color insensitive_selected_fg_color_breeze ${WAYBAR_INACTIVE};
+@define-color insensitive_unfocused_fg_color_breeze ${WAYBAR_INACTIVE};
+@define-color insensitive_unfocused_bg_color_breeze ${TERM_BLACK};
+@define-color insensitive_unfocused_selected_bg_color_breeze ${TERM_BRIGHT_BLACK};
+@define-color insensitive_unfocused_selected_fg_color_breeze ${WAYBAR_INACTIVE};
+@define-color theme_unfocused_view_text_color_breeze ${WAYBAR_INACTIVE};
+@define-color theme_unfocused_view_bg_color_breeze ${TERM_BG};
+@define-color borders_breeze ${TERM_BRIGHT_BLACK};
+@define-color unfocused_borders_breeze ${TERM_BLACK};
+@define-color insensitive_borders_breeze ${TERM_BRIGHT_BLACK};
+@define-color unfocused_insensitive_borders_breeze ${TERM_BLACK};
+@define-color warning_color_breeze ${TERM_YELLOW};
+@define-color warning_color_backdrop_breeze ${TERM_YELLOW};
+@define-color error_color_breeze ${TERM_RED};
+@define-color error_color_backdrop_breeze ${TERM_RED};
+@define-color success_color_breeze ${TERM_GREEN};
+@define-color success_color_backdrop_breeze ${TERM_GREEN};
+@define-color link_color_breeze ${TERM_BLUE};
+@define-color link_visited_color_breeze ${TERM_MAGENTA};
+@define-color content_view_bg_breeze ${TERM_BG};
+@define-color tooltip_background_breeze ${TERM_BLACK};
+@define-color tooltip_border_breeze ${TERM_BRIGHT_BLACK};
+@define-color tooltip_text_breeze ${TERM_FG};
+@define-color theme_button_background_normal_breeze ${TERM_BLACK};
+@define-color theme_button_background_backdrop_breeze ${TERM_BLACK};
+@define-color theme_button_background_insensitive_breeze ${TERM_BRIGHT_BLACK};
+@define-color theme_button_background_backdrop_insensitive_breeze ${TERM_BRIGHT_BLACK};
+@define-color theme_button_foreground_normal_breeze ${TERM_FG};
+@define-color theme_button_foreground_active_breeze ${selected_fg};
+@define-color theme_button_foreground_backdrop_breeze ${TERM_FG};
+@define-color theme_button_foreground_insensitive_breeze ${WAYBAR_INACTIVE};
+@define-color theme_button_foreground_active_insensitive_breeze ${WAYBAR_INACTIVE};
+@define-color theme_button_foreground_backdrop_insensitive_breeze ${WAYBAR_INACTIVE};
+@define-color theme_button_foreground_active_backdrop_breeze ${selected_fg};
+@define-color theme_button_foreground_active_backdrop_insensitive_breeze ${WAYBAR_INACTIVE};
+@define-color theme_button_decoration_hover_breeze ${accent};
+@define-color theme_button_decoration_focus_breeze ${accent};
+@define-color theme_button_decoration_hover_backdrop_breeze ${accent_alt};
+@define-color theme_button_decoration_focus_backdrop_breeze ${accent_alt};
+@define-color theme_button_decoration_hover_insensitive_breeze ${TERM_BRIGHT_BLACK};
+@define-color theme_button_decoration_focus_insensitive_breeze ${TERM_BRIGHT_BLACK};
+@define-color theme_button_decoration_hover_backdrop_insensitive_breeze ${TERM_BRIGHT_BLACK};
+@define-color theme_button_decoration_focus_backdrop_insensitive_breeze ${TERM_BRIGHT_BLACK};
+@define-color theme_header_background_breeze ${header_bg};
+@define-color theme_header_background_backdrop_breeze ${header_bg_inactive};
+@define-color theme_header_background_light_breeze ${header_bg};
+@define-color theme_header_foreground_breeze ${TERM_FG};
+@define-color theme_header_foreground_backdrop_breeze ${WAYBAR_INACTIVE};
+@define-color theme_header_foreground_insensitive_breeze ${WAYBAR_INACTIVE};
+@define-color theme_header_foreground_insensitive_backdrop_breeze ${WAYBAR_INACTIVE};
+@define-color theme_titlebar_background_breeze ${header_bg};
+@define-color theme_titlebar_background_backdrop_breeze ${header_bg_inactive};
+@define-color theme_titlebar_background_light_breeze ${header_bg};
+@define-color theme_titlebar_foreground_breeze ${TERM_FG};
+@define-color theme_titlebar_foreground_backdrop_breeze ${WAYBAR_INACTIVE};
+@define-color theme_titlebar_foreground_insensitive_breeze ${WAYBAR_INACTIVE};
+@define-color theme_titlebar_foreground_insensitive_backdrop_breeze ${WAYBAR_INACTIVE};
+@define-color theme_view_active_decoration_color_breeze ${accent};
+@define-color theme_view_hover_decoration_color_breeze ${accent};
+@define-color theme_hovering_selected_bg_color_breeze ${accent_alt};
+
+@define-color window_bg_color ${TERM_BG};
+@define-color window_fg_color ${TERM_FG};
+@define-color view_bg_color ${TERM_BG};
+@define-color view_fg_color ${TERM_FG};
+@define-color headerbar_bg_color ${header_bg};
+@define-color headerbar_backdrop_color ${header_bg_inactive};
+@define-color headerbar_fg_color ${TERM_FG};
+@define-color headerbar_border_color ${header_border};
+@define-color headerbar_shade_color ${header_border};
+@define-color card_bg_color ${TERM_BLACK};
+@define-color card_fg_color ${TERM_FG};
+@define-color popover_bg_color ${TERM_BLACK};
+@define-color popover_fg_color ${TERM_FG};
+@define-color dialog_bg_color ${TERM_BG};
+@define-color dialog_fg_color ${TERM_FG};
+@define-color accent_bg_color ${accent};
+@define-color accent_fg_color ${selected_fg};
+@define-color accent_color ${accent};
+@define-color destructive_bg_color ${TERM_RED};
+@define-color destructive_fg_color ${selected_fg};
+@define-color success_bg_color ${TERM_GREEN};
+@define-color warning_bg_color ${TERM_YELLOW};
+@define-color error_bg_color ${TERM_RED};
+EOF
+
+		if [ -L "$gtk_dir/gtk.css" ]; then
+			rm -f "$gtk_dir/gtk.css"
+		fi
+		cat > "$gtk_dir/gtk.css" <<'EOF'
+@import url("colors.css");
+
+selection,
+*:selected {
+  background-color: @theme_selected_bg_color;
+  color: @theme_selected_fg_color;
+}
+
+tooltip {
+  background-color: @tooltip_background;
+  color: @tooltip_text;
+  border: 1px solid @borders;
+}
+
+entry:focus,
+button:focus,
+button:hover {
+  border-color: @theme_button_decoration_focus;
+}
+
+headerbar,
+.titlebar {
+  background-color: @headerbar_bg_color;
+  border-color: @headerbar_border_color;
+}
+
+headerbar:backdrop,
+.titlebar:backdrop {
+  background-color: @headerbar_backdrop_color;
+}
+EOF
+	done
+
+	cat > "$HOME/.config/gtk-3.0/settings.ini" <<EOF
+[Settings]
+gtk-application-prefer-dark-theme=${prefer_dark}
+gtk-button-images=true
+gtk-cursor-blink=true
+gtk-cursor-blink-time=1000
+gtk-cursor-theme-name=${CURSOR_THEME}
+gtk-cursor-theme-size=24
+gtk-decoration-layout=icon:minimize,maximize,close
+gtk-enable-animations=true
+gtk-enable-event-sounds=1
+gtk-enable-input-feedback-sounds=0
+gtk-font-name=Noto Sans,  10
+gtk-icon-theme-name=${ICON_THEME}
+gtk-menu-images=true
+gtk-modules=colorreload-gtk-module:window-decorations-gtk-module
+gtk-primary-button-warps-slider=true
+gtk-sound-theme-name=ocean
+gtk-theme-name=${GTK_THEME}
+gtk-toolbar-icon-size=GTK_ICON_SIZE_LARGE_TOOLBAR
+gtk-toolbar-style=3
+gtk-xft-antialias=1
+gtk-xft-dpi=98304
+gtk-xft-hinting=1
+gtk-xft-hintstyle=hintslight
+gtk-xft-rgba=rgb
+EOF
+
+	cat > "$HOME/.config/gtk-4.0/settings.ini" <<EOF
+[Settings]
+gtk-application-prefer-dark-theme=${prefer_dark}
+gtk-cursor-blink=true
+gtk-cursor-blink-time=1000
+gtk-cursor-theme-name=${CURSOR_THEME}
+gtk-cursor-theme-size=24
+gtk-decoration-layout=icon:minimize,maximize,close
+gtk-enable-animations=true
+gtk-font-name=Noto Sans,  10
+gtk-icon-theme-name=${ICON_THEME}
+gtk-primary-button-warps-slider=true
+gtk-sound-theme-name=ocean
+gtk-theme-name=${GTK_THEME}
+gtk-xft-dpi=98304
+EOF
+
+	gsettings set org.gnome.desktop.interface color-scheme "prefer-${MODE}" >/dev/null 2>&1 || true
+	gsettings set org.gnome.desktop.interface gtk-theme "$GTK_THEME" >/dev/null 2>&1 || true
+	gsettings set org.gnome.desktop.interface icon-theme "$ICON_THEME" >/dev/null 2>&1 || true
+	gsettings set org.gnome.desktop.interface cursor-theme "$CURSOR_THEME" >/dev/null 2>&1 || true
+}
+
+apply_kde_theme() {
+	qdbus6 org.kde.KWin /KWin supportInformation >/dev/null 2>&1 || return 0
+	(plasma-apply-colorscheme "$KDE_COLOR_SCHEME") >/dev/null 2>&1 || true
+	kwriteconfig6 --file kdeglobals --group Icons --key Theme "$ICON_THEME" >/dev/null 2>&1 || true
+	kwriteconfig6 --file kdeglobals --group KDE --key widgetStyle Breeze >/dev/null 2>&1 || true
+	qdbus6 org.kde.KWin /KWin reconfigure >/dev/null 2>&1 || true
+}
+
+apply_hypr_theme() {
+	local active_color_1 active_color_2 active_color_3 active_angle
+
+	read -r active_color_1 active_color_2 active_color_3 active_angle <<<"$HYPR_ACTIVE_BORDER"
+	active_angle="${active_angle%deg}"
+
+	hyprctl eval "hl.config({ general = { border_size = ${HYPR_BORDER_SIZE:-3}, col = { active_border = { colors = { \"${active_color_1}\", \"${active_color_2}\", \"${active_color_3}\" }, angle = ${active_angle} }, inactive_border = \"${HYPR_INACTIVE_BORDER}\" } } })" >/dev/null 2>&1 || true
+}
+
+apply_wallpaper() {
+	if [ -f "$WALLPAPER" ]; then
+		printf '%s\n' "$WALLPAPER" > "$wallpaper_file"
+
+		hyprctl monitors -j >/dev/null 2>&1 || return 0
+		"$HOME/.local/bin/restore-wallpaper" >/dev/null 2>&1 || true
+	fi
+}
+
+reload_apps() {
+	kitty @ set-colors --all "$HOME/.config/kitty/theme-current.conf" >/dev/null 2>&1 || true
+}
+
+apply_theme() {
+	local theme="$1"
+
+	if ! load_theme "$theme"; then
+		printf 'Unknown theme: %s\n' "$theme" >&2
+		exit 2
+	fi
+
+	write_kitty_theme
+	write_neovim_theme
+	write_gtk_settings
+	write_tide_palette
+	apply_kde_theme
+	apply_hypr_theme
+	apply_wallpaper
+	reload_apps
+
+	printf '%s\n' "$THEME_ID" > "$current_file"
+	quickshell ipc --any-display -p "$HOME/.local/share/tide-island-dotfiles" call tide setTheme "$THEME_ID" >/dev/null 2>&1 || true
+	notify-send --app-name hypr-theme-switcher "Theme applied" "$THEME_NAME" >/dev/null 2>&1 || true
+	printf '%s\n' "$THEME_ID"
+}
+
+choose_theme() {
+	quickshell ipc --any-display -p "$HOME/.local/share/tide-island-dotfiles" call tide toggleThemeSwitcher >/dev/null 2>&1 || {
+		printf 'Tide Island theme switcher is not running.\n' >&2
+		exit 1
+	}
+}
+
+case "${1:-menu}" in
+	menu) choose_theme ;;
+	apply)
+		[ -n "${2:-}" ] || {
+			printf 'Usage: %s apply <theme-id>\n' "$0" >&2
+			exit 2
+		}
+		apply_theme "$2"
+		;;
+	current)
+		if [ -f "$current_file" ]; then
+			cat "$current_file"
+		else
+			printf 'default\n'
+		fi
+		;;
+	palette)
+		[ -n "${2:-}" ] || {
+			printf 'Usage: %s palette <theme-id>\n' "$0" >&2
+			exit 2
+		}
+		load_theme "$2" || {
+			printf 'Unknown theme: %s\n' "$2" >&2
+			exit 2
+		}
+		render_tide_palette
+		;;
+	*)
+		printf 'Usage: %s [menu|apply <theme-id>|palette <theme-id>|current]\n' "$0" >&2
+		exit 2
+		;;
+esac

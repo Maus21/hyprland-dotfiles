@@ -1,0 +1,10 @@
+# Generated local state
+home/.config/hypr/hardware.lua
+home/.config/tide-island/userconfig.json
+home/.config/tide-island/.dotfiles-managed
+home/.config/systemd/user/tide-island.service
+*.bak
+*.log
+.DS_Store
+.idea/
+.vscode/

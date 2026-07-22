@@ -1,0 +1,23 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+pkill -x waybar >/dev/null 2>&1 || true
+systemctl --user stop swaync.service >/dev/null 2>&1 || true
+pkill -x swaync >/dev/null 2>&1 || true
+pkill -x swaync-client >/dev/null 2>&1 || true
+logfile="$HOME/.cache/tide-island-dotfiles.log"
+local_qml="$HOME/.local/share/tide-island-dotfiles"
+
+if ! command -v tide-island >/dev/null 2>&1; then
+  exit 0
+fi
+
+if command -v quickshell >/dev/null 2>&1 \
+  && quickshell ipc --any-display -p "$local_qml" call island show >/dev/null 2>&1; then
+  exit 0
+fi
+
+systemctl --user stop tide-island.service >/dev/null 2>&1 || true
+quickshell kill --any-display -p /usr/share/tide-island >/dev/null 2>&1 || true
+systemctl --user daemon-reload
+systemctl --user enable --now tide-island-dotfiles.service >/dev/null

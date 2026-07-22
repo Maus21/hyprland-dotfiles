@@ -1,0 +1,14 @@
+[Unit]
+Description=Tide Island with local dotfiles configuration
+After=graphical-session.target
+BindsTo=graphical-session.target
+
+[Service]
+Type=simple
+Environment=TIDE_ISLAND_QML_PATH=%h/.local/share/tide-island-dotfiles
+ExecStart=/usr/bin/tide-island
+Restart=on-failure
+RestartSec=3
+
+[Install]
+WantedBy=graphical-session.target

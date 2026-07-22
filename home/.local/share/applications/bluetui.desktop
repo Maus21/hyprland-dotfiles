@@ -1,0 +1,12 @@
+[Desktop Entry]
+Type=Application
+Version=1.0
+Name=Bluetui
+GenericName=Bluetooth Manager
+Comment=Manage Bluetooth devices in the terminal
+Exec=bluetui
+TryExec=bluetui
+Icon=bluetooth
+Terminal=true
+Categories=Settings;HardwareSettings;ConsoleOnly;
+Keywords=bluetooth;bluez;wireless;pair;connect;device;tui;

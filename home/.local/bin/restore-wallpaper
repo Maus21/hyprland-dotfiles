@@ -1,0 +1,29 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+state_dir="$HOME/.cache/hypr-theme-switcher"
+wallpaper_file="$state_dir/current-wallpaper"
+fallback="$HOME/Pictures/wallpapers/girl_umbrella_road_water_mountain_fence_house.png"
+wallpaper="$fallback"
+
+mkdir -p "$state_dir"
+
+if [ -n "${1:-}" ]; then
+  wallpaper="${1/#\~/$HOME}"
+  printf '%s\n' "$wallpaper" > "$wallpaper_file"
+elif [ -f "$wallpaper_file" ]; then
+  read -r wallpaper < "$wallpaper_file" || wallpaper="$fallback"
+fi
+
+if [ ! -f "$wallpaper" ]; then
+  wallpaper="$fallback"
+fi
+
+[ -f "$wallpaper" ] || exit 0
+
+if ! pgrep -x awww-daemon >/dev/null 2>&1; then
+  awww-daemon >/dev/null 2>&1 &
+  sleep 0.5
+fi
+
+awww img "$wallpaper" --transition-type fade --transition-duration 0.7 --transition-fps 60 >/dev/null 2>&1 || true

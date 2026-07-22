@@ -1,0 +1,4 @@
+[
+  {"name":"eDP-1","width":1920,"height":1080,"refreshRate":144.0,"scale":1.0,"focused":false},
+  {"name":"DP-3","width":2560,"height":1440,"refreshRate":165.0,"scale":1.0,"focused":true}
+]

@@ -1,0 +1,18 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+yay -S --needed tide-island
+
+systemctl --user daemon-reload
+systemctl --user disable --now tide-island.service >/dev/null 2>&1 || true
+
+pkill -x waybar >/dev/null 2>&1 || true
+quickshell kill --any-display -p /usr/share/tide-island >/dev/null 2>&1 || true
+
+systemctl --user enable --now tide-island-dotfiles.service >/dev/null
+
+if command -v quickshell >/dev/null 2>&1; then
+  quickshell ipc --any-display -p "$HOME/.local/share/tide-island-dotfiles" call island show >/dev/null 2>&1 || true
+fi
+
+echo "Tide Island is installed and enabled. User config: $HOME/.config/tide-island/userconfig.json"

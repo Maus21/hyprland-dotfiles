@@ -1,0 +1,13 @@
+[StreamInputs]
+plugins=rnnoise#0,speex#0
+visiblePage=pluginsPage
+visiblePlugin=speex#0
+
+[StreamOutputs]
+[Style]
+forceBreezeTheme=false
+
+[Window]
+height=992
+visiblePage=inputPage
+width=1876

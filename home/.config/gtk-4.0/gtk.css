@@ -1,0 +1,30 @@
+@import url("colors.css");
+
+selection,
+*:selected {
+  background-color: @theme_selected_bg_color;
+  color: @theme_selected_fg_color;
+}
+
+tooltip {
+  background-color: @tooltip_background;
+  color: @tooltip_text;
+  border: 1px solid @borders;
+}
+
+entry:focus,
+button:focus,
+button:hover {
+  border-color: @theme_button_decoration_focus;
+}
+
+headerbar,
+.titlebar {
+  background-color: @headerbar_bg_color;
+  border-color: @headerbar_border_color;
+}
+
+headerbar:backdrop,
+.titlebar:backdrop {
+  background-color: @headerbar_backdrop_color;
+}

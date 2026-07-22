@@ -1,0 +1,17 @@
+[Added Associations]
+application/json=nvim.desktop;
+application/x-docbook+xml=nvim.desktop;
+application/x-yaml=nvim.desktop;
+text/markdown=nvim.desktop;
+text/plain=nvim.desktop;
+text/x-cmake=nvim.desktop;
+
+[Default Applications]
+application/json=nvim.desktop;
+application/x-docbook+xml=nvim.desktop;
+application/x-yaml=nvim.desktop;
+text/markdown=nvim.desktop;
+text/plain=nvim.desktop;
+text/x-cmake=nvim.desktop;
+video/mp4=mpv.desktop
+

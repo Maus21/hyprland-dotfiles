@@ -1,0 +1,6 @@
+[sie][EchoCanceller#0]
+enableEchoCanceller=false
+enableHighPassFilter=false
+enableNoiseSuppression=false
+highPassFilterFullBand=false
+noiseSuppressionLevel=0

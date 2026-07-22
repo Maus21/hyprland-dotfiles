@@ -1,0 +1,45 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+desktop_file="${1:-}"
+[ -f "$desktop_file" ] || exit 2
+
+desktop_id="$(basename "$desktop_file" .desktop)"
+
+entry_value() {
+  local key="$1"
+  awk -F= -v key="$key" '
+    $0 == "[Desktop Entry]" { in_entry = 1; next }
+    /^\[/ && $0 != "[Desktop Entry]" { in_entry = 0 }
+    in_entry && $1 == key {
+      sub(/^[^=]*=/, "")
+      print
+      exit
+    }
+  ' "$desktop_file"
+}
+
+terminal="$(entry_value Terminal | tr '[:upper:]' '[:lower:]')"
+exec_line="$(entry_value Exec)"
+
+strip_field_codes() {
+  printf '%s\n' "$1" | sed -E 's/[[:space:]]+%[fFuUdDnNickvm]//g; s/%[fFuUdDnNickvm]//g; s/[[:space:]]+$//'
+}
+
+if [ "$terminal" = "true" ]; then
+  command_line="$(strip_field_codes "$exec_line")"
+  [ -n "$command_line" ] || exit 3
+  setsid kitty -e sh -lc "exec $command_line" >/dev/null 2>&1 &
+  exit 0
+fi
+
+if command -v gtk-launch >/dev/null 2>&1; then
+  setsid gtk-launch "$desktop_id" >/dev/null 2>&1 && exit 0
+fi
+
+setsid gio launch "$desktop_file" >/dev/null 2>&1 && exit 0
+
+command_line="$(strip_field_codes "$exec_line")"
+[ -n "$command_line" ] || exit 3
+setsid sh -lc "exec $command_line" >/dev/null 2>&1 &
+exit 0

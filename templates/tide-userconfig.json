@@ -1,0 +1,95 @@
+{
+    "bodyFontSize": 14,
+    "clockFormat": "24",
+    "disableAutoExpandOnTrackChange": true,
+    "dynamicIslandLeftSwipeItems": [
+        "cpu",
+        "date",
+        "ram"
+    ],
+    "dynamicIslandPrimaryAction": "toggleExpandedPlayer",
+    "dynamicIslandPrimaryButton": 1,
+    "dynamicIslandSecondaryAction": "toggleControlCenter",
+    "dynamicIslandSecondaryButton": 3,
+    "heroFontFamily": "Roboto Mono",
+    "hoverExpandAction": 1,
+    "iconFontFamily": "CaskaydiaCove Nerd Font Propo",
+    "iconFontSize": 17,
+    "islandAutoHideDelayMs": 900,
+    "islandAutoHideEnabled": false,
+    "islandExclusiveZone": 44,
+    "islandHeight": 34,
+    "islandPositionX": 50,
+    "islandTopMargin": 4,
+    "islandWidth": 154,
+    "shortcutBindings": [
+        {
+            "key": "TAB",
+            "method": "toggle",
+            "mods": "SUPER",
+            "target": "overview"
+        },
+        {
+            "key": "right",
+            "method": "swipeRight",
+            "mods": "SUPER",
+            "target": "tide"
+        },
+        {
+            "key": "left",
+            "method": "showCustom",
+            "mods": "SUPER",
+            "target": "tide"
+        },
+        {
+            "key": "down",
+            "method": "showClock",
+            "mods": "SUPER",
+            "target": "tide"
+        },
+        {
+            "key": "M",
+            "method": "togglePlayer",
+            "mods": "SUPER",
+            "target": "tide"
+        },
+        {
+            "key": "C",
+            "method": "toggleControlCenter",
+            "mods": "SUPER",
+            "target": "tide"
+        },
+        {
+            "key": "W",
+            "method": "toggleWallpaperPicker",
+            "mods": "SUPER",
+            "target": "tide"
+        },
+        {
+            "key": "insert",
+            "method": "toggle",
+            "mods": "SUPER",
+            "target": "island"
+        }
+    ],
+    "textFontFamily": "Roboto Mono",
+    "timeFontFamily": "Roboto Mono",
+    "titleFontSize": 18,
+    "tlpPermissionMode": "password",
+    "tlpSudoPassword": "",
+    "wallpaperCustomCommand": "__HOME__/.local/bin/restore-wallpaper \"$1\"",
+    "wallpaperCustomCommandEnabled": true,
+    "wallpaperLibraryPath": "__HOME__/Pictures/wallpapers",
+    "wallpaperPath": "__HOME__/Pictures/wallpapers/car_woman_track_road_stadium_nissan_wheel_japan_race_track.jpg",
+    "wallpaperPywalEnabled": false,
+    "wallpaperTransitionAngle": 45,
+    "wallpaperTransitionBezier": ".54,0,.34,.99",
+    "wallpaperTransitionDuration": 2.4,
+    "wallpaperTransitionFps": 60,
+    "wallpaperTransitionInvertY": false,
+    "wallpaperTransitionPosition": "center",
+    "wallpaperTransitionStep": 5,
+    "wallpaperTransitionType": "wipe",
+    "wallpaperTransitionWave": "20,20",
+    "workspaceOverviewWindowDragButton": 1
+}
