@@ -68,6 +68,9 @@ PanelWindow {
     readonly property color tideModuleColor: tideThemeColor("module")
     readonly property color tideModuleHoverColor: tideThemeColor("hover")
     readonly property color tideBorderColor: tideThemeColor("border")
+    readonly property color tideControlCenterBorderColor: root.tideThemeId === "noir"
+        ? "#303842"
+        : root.tideBorderColor
     readonly property color tideAccentColor: tideThemeColor("accent")
     readonly property color tideAccentAltColor: tideThemeColor("accentAlt")
     readonly property color tideTextPrimaryColor: tideThemeColor("text")
@@ -798,9 +801,13 @@ PanelWindow {
         id: overviewWallpaperCache
 
         active: root.overviewLoaderActive
-        wallpaperPath: userConfig.wallpaperCustomCommandEnabled === true && root.wallpaperPickerActiveWallpaper !== ""
-            ? root.wallpaperPickerActiveWallpaper
-            : userConfig.wallpaperPath
+        wallpaperPath: root.shellRootController
+            && root.shellRootController.currentWallpaperPath !== undefined
+            && root.shellRootController.currentWallpaperPath !== ""
+            ? root.shellRootController.currentWallpaperPath
+            : (root.wallpaperPickerActiveWallpaper !== ""
+                ? root.wallpaperPickerActiveWallpaper
+                : root.userConfig.wallpaperPath)
         hyprMonitor: root.hyprMonitor
         screenObject: root.screen
     }
@@ -1703,7 +1710,11 @@ PanelWindow {
             z: 5
             property int morphDuration: 400
             property real outlineWidth: 1
-            property color outlineColor: root.overviewContentVisible ? root.overviewCapsuleBorderColor : root.tideBorderColor
+            property color outlineColor: root.overviewContentVisible
+                ? root.overviewCapsuleBorderColor
+                : (islandContainer.controlCenterLayerVisible
+                    ? root.tideControlCenterBorderColor
+                    : root.tideBorderColor)
             property real displayedWidth: baseTargetWidth
             readonly property real baseTargetWidth: {
                 if (root.overviewVisible) return root.overviewCapsuleWidth;
@@ -1837,7 +1848,7 @@ PanelWindow {
             Behavior on outlineWidth { NumberAnimation { duration: 260; easing.type: Easing.InOutQuad } }
             Behavior on outlineColor { ColorAnimation { duration: 260; easing.type: Easing.InOutQuad } }
             border.width: outlineWidth
-            border.color: root.overviewContentVisible ? outlineColor : root.tideBorderColor
+            border.color: outlineColor
 
             Rectangle {
                 anchors.fill: parent
@@ -2376,7 +2387,7 @@ PanelWindow {
                         panelColor: root.tidePanelColor
                         moduleColor: root.tideModuleColor
                         moduleHover: root.tideModuleHoverColor
-                        trackColor: root.tideBorderColor
+                        trackColor: root.tideControlCenterBorderColor
                         textPrimary: root.tideTextPrimaryColor
                         textSecondary: root.tideTextSecondaryColor
                         cardAccent: root.tideAccentColor
@@ -2536,6 +2547,7 @@ PanelWindow {
                         accentColor: root.tideAccentColor
                         textPrimary: root.tideTextPrimaryColor
                         textSecondary: root.tideTextSecondaryColor
+                        selectedTextColor: root.tideSelectedTextColor
                         showCondition: islandContainer.toolOverlayLayerVisible && root.webSearchLayerVisible
                         onCloseRequested: root.closeToolOverlay()
                     }

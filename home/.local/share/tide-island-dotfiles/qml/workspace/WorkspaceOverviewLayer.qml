@@ -325,12 +325,28 @@ Item {
                                     bottomRightRadius: Math.max(wsCell.bottomRightRadius-1,0)
 
                                     Image {
+                                        id: wallpaperImage
+
                                         anchors.fill: parent
-                                        source: root.wallpaperPath
+                                        property string requestedSource: root.wallpaperPath
+
+                                        source: ""
                                         fillMode: Image.PreserveAspectCrop
                                         sourceSize.width: root.cachedWallpaperWidth
                                         sourceSize.height: root.cachedWallpaperHeight
-                                        asynchronous: false; cache: true; opacity: 0.92
+                                        asynchronous: false; cache: false; opacity: 0.92
+
+                                        function reloadSource() {
+                                            const nextSource = requestedSource;
+                                            source = "";
+                                            Qt.callLater(function() {
+                                                if (wallpaperImage.requestedSource === nextSource)
+                                                    wallpaperImage.source = nextSource;
+                                            });
+                                        }
+
+                                        onRequestedSourceChanged: reloadSource()
+                                        Component.onCompleted: reloadSource()
                                     }
                                     Rectangle {
                                         anchors.fill: parent

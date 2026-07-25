@@ -1141,13 +1141,13 @@ Item {
                 controlCenter.bluetoothPairAndConnectPath = "";
                 controlCenter.bluetoothInfoMessage = "";
                 controlCenter.bluetoothError = "";
-                controlCenter.bluetoothScanStopTimer.stop();
+                bluetoothScanStopTimer.stop();
             }
         }
 
         function onDiscoveringChanged() {
             if (!controlCenter.bluetoothAdapter.discovering)
-                controlCenter.bluetoothScanStopTimer.stop();
+                bluetoothScanStopTimer.stop();
         }
     }
 

@@ -2,6 +2,7 @@ import QtQuick
 import QtCore
 import Quickshell
 import Quickshell.Io
+import Quickshell.Services.Notifications
 import IslandBackend
 
 Scope {
@@ -22,6 +23,25 @@ Scope {
     property string currentWallpaperPath: ""
 
     readonly property var userConfig: UserConfig
+
+    NotificationServer {
+        id: notificationServer
+
+        keepOnReload: true
+        persistenceSupported: false
+        bodySupported: true
+        bodyMarkupSupported: false
+        bodyHyperlinksSupported: false
+        bodyImagesSupported: false
+        actionsSupported: false
+        actionIconsSupported: false
+        imageSupported: false
+        inlineReplySupported: false
+
+        onNotification: function(notification) {
+            shellRoot.showNotificationAll(notification.appName, notification.summary, notification.body);
+        }
+    }
 
     FileView {
         id: tidePaletteState
@@ -104,6 +124,7 @@ Scope {
         if (CompositorBackend.compositor === "niri")
             return;
 
+        shellRoot.syncCurrentWallpaper(true);
         shellRoot.forEachWindow((window) => window.prepareOverview());
     }
 
@@ -118,6 +139,7 @@ Scope {
         if (CompositorBackend.compositor === "niri")
             return;
 
+        shellRoot.syncCurrentWallpaper(true);
         shellRoot.forEachWindow((window) => window.openOverview());
     }
 
@@ -178,13 +200,17 @@ Scope {
     }
 
     function refreshOverviewWallpaperCaches(wallpaperPath) {
+        const nextWallpaperPath = wallpaperPath !== undefined
+            && wallpaperPath !== null
+            ? String(wallpaperPath).trim()
+            : "";
+
+        if (nextWallpaperPath !== "")
+            shellRoot.currentWallpaperPath = nextWallpaperPath;
+
         shellRoot.forEachWindow((window) => {
-            if (window
-                    && wallpaperPath !== undefined
-                    && wallpaperPath !== null
-                    && String(wallpaperPath) !== "") {
-                window.wallpaperPickerActiveWallpaper = String(wallpaperPath);
-            }
+            if (window && nextWallpaperPath !== "")
+                window.wallpaperPickerActiveWallpaper = nextWallpaperPath;
             if (window && window.prewarmWallpaperCache)
                 window.prewarmWallpaperCache();
         });

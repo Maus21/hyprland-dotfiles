@@ -10,6 +10,7 @@ brightnessctl
 btop
 capitaine-cursors
 chromium
+helium-browser-bin
 easyeffects
 fastfetch
 fish

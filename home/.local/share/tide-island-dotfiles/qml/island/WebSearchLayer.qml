@@ -14,6 +14,7 @@ FocusScope {
     property color accentColor: "#ff4f7b"
     property color textPrimary: "#d8e7ef"
     property color textSecondary: "#7f8497"
+    property color selectedTextColor: "#12151e"
     property string pendingUrl: ""
     property bool pendingIncognito: false
 
@@ -32,7 +33,7 @@ FocusScope {
         const query = searchField.text.trim();
         if (query === "" || browserProcess.running)
             return;
-        pendingUrl = "https://www.google.com/search?q=" + encodeURIComponent(query);
+        pendingUrl = "https://duckduckgo.com/?q=" + encodeURIComponent(query);
         pendingIncognito = incognito;
         browserProcess.running = true;
     }
@@ -63,7 +64,7 @@ FocusScope {
 
             Text {
                 width: parent.width - searchHint.width
-                text: "Google Search"
+                text: "Search"
                 color: root.textPrimary
                 font.family: root.textFontFamily
                 font.pixelSize: 17
@@ -92,7 +93,7 @@ FocusScope {
                 anchors.leftMargin: 14
                 anchors.rightMargin: 14
                 verticalAlignment: Text.AlignVCenter
-                text: "Search Google..."
+                text: "Search..."
                 visible: searchField.text === ""
                 color: root.textSecondary
                 font.family: root.textFontFamily
@@ -107,7 +108,7 @@ FocusScope {
                 verticalAlignment: TextInput.AlignVCenter
                 color: root.textPrimary
                 selectionColor: root.accentColor
-                selectedTextColor: root.panelColor
+                selectedTextColor: root.selectedTextColor
                 font.family: root.textFontFamily
                 font.pixelSize: 16
                 clip: true
@@ -127,8 +128,8 @@ FocusScope {
     Process {
         id: browserProcess
         command: root.pendingIncognito
-            ? ["/usr/bin/chromium", "--profile-directory=Default", "--incognito", root.pendingUrl]
-            : ["/usr/bin/chromium", "--profile-directory=Default", root.pendingUrl]
+            ? ["/usr/bin/helium-browser", "--incognito", root.pendingUrl]
+            : ["/usr/bin/helium-browser", root.pendingUrl]
         running: false
         onExited: root.closeRequested()
     }

@@ -6,11 +6,11 @@ into the target home, and keeps machine-specific display state out of Git.
 
 ## Included
 
-- Hyprland configuration, adaptive workspace layout, helpers, and six coordinated themes
-- Customized Tide Island QML, settings template, launcher, and user service
+- Hyprland configuration, adaptive workspace layout, animation presets, helpers, and seven coordinated themes
+- Customized Tide Island QML, settings template, launcher, notification handling, and user service
 - Kitty, LazyVim, Yazi, Btop, Fish, Fastfetch, and Anifetch with its GIF
 - EasyEffects, pavucontrol, PipeWire overrides, GTK styling, fonts, and icons
-- Chromium plus a restoration list for the currently installed extensions
+- Helium as the default browser, Chromium as a fallback, and a safe extension restoration list
 - Bluetui and NetworkManager's `nmtui`, including desktop launchers
 - The complete wallpaper library through Git LFS
 
@@ -61,9 +61,11 @@ locally managed Tide preferences are preserved on later runs.
 
 ## Browser restore
 
-Chromium is installed, but personal browser databases are not copied. Sign in
-to browser sync if desired, then use `packages/chromium-extensions.tsv` as the
-extension checklist. Each ID can be opened as:
+Helium and Chromium are installed, with Helium configured as the default and
+used by Tide Island's DuckDuckGo search. Personal browser databases are not
+copied. Sign in or configure the browser normally, then use
+`packages/browser-extensions.tsv` as the extension checklist. Each ID can be
+opened as:
 
 ```text
 https://chromewebstore.google.com/detail/EXTENSION_ID

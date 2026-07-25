@@ -10,7 +10,8 @@ mkdir -p "$state_dir"
 
 theme_file() {
 	case "$1" in
-		default | "Default") printf '%s/default.theme\n' "$themes_dir" ;;
+		default | "Default" | "Sapphire Dusk") printf '%s/default.theme\n' "$themes_dir" ;;
+		noir | "Noir Skyline") printf '%s/noir.theme\n' "$themes_dir" ;;
 		tokyo | "Tokyo Night") printf '%s/tokyo.theme\n' "$themes_dir" ;;
 		nord | "Nord") printf '%s/nord.theme\n' "$themes_dir" ;;
 		everforest | "Everforest") printf '%s/everforest.theme\n' "$themes_dir" ;;
@@ -172,6 +173,7 @@ write_gtk_settings() {
 	local header_bg="${GTK_HEADER_BG:-${TIDE_HOVER:-$TERM_BLACK}}"
 	local header_bg_inactive="${GTK_HEADER_BG_INACTIVE:-${TIDE_MODULE:-$TERM_BLACK}}"
 	local header_border="${GTK_HEADER_BORDER:-$accent}"
+	local inactive="${GTK_INACTIVE:-${TIDE_TEXT_MUTED:-$TERM_BRIGHT_BLACK}}"
 
 	if [ "$MODE" = "dark" ]; then
 		prefer_dark="true"
@@ -188,16 +190,16 @@ write_gtk_settings() {
 @define-color theme_base_color ${TERM_BG};
 @define-color theme_selected_bg_color ${accent};
 @define-color theme_selected_fg_color ${selected_fg};
-@define-color theme_unfocused_fg_color ${WAYBAR_INACTIVE};
-@define-color theme_unfocused_text_color ${WAYBAR_INACTIVE};
+@define-color theme_unfocused_fg_color ${inactive};
+@define-color theme_unfocused_text_color ${inactive};
 @define-color theme_unfocused_bg_color ${TERM_BG};
 @define-color theme_unfocused_base_color ${TERM_BG};
 @define-color theme_unfocused_selected_bg_color ${accent_alt};
 @define-color theme_unfocused_selected_fg_color ${selected_fg};
-@define-color insensitive_fg_color ${WAYBAR_INACTIVE};
+@define-color insensitive_fg_color ${inactive};
 @define-color insensitive_bg_color ${TERM_BLACK};
 @define-color insensitive_base_color ${TERM_BLACK};
-@define-color insensitive_base_fg_color ${WAYBAR_INACTIVE};
+@define-color insensitive_base_fg_color ${inactive};
 @define-color borders ${TERM_BRIGHT_BLACK};
 @define-color unfocused_borders ${TERM_BLACK};
 @define-color warning_color ${TERM_YELLOW};
@@ -223,24 +225,24 @@ write_gtk_settings() {
 @define-color theme_base_color_breeze ${TERM_BG};
 @define-color theme_selected_bg_color_breeze ${accent};
 @define-color theme_selected_fg_color_breeze ${selected_fg};
-@define-color theme_unfocused_fg_color_breeze ${WAYBAR_INACTIVE};
-@define-color theme_unfocused_text_color_breeze ${WAYBAR_INACTIVE};
+@define-color theme_unfocused_fg_color_breeze ${inactive};
+@define-color theme_unfocused_text_color_breeze ${inactive};
 @define-color theme_unfocused_bg_color_breeze ${TERM_BG};
 @define-color theme_unfocused_base_color_breeze ${TERM_BG};
 @define-color theme_unfocused_selected_bg_color_breeze ${accent_alt};
 @define-color theme_unfocused_selected_bg_color_alt_breeze ${accent_alt};
 @define-color theme_unfocused_selected_fg_color_breeze ${selected_fg};
-@define-color insensitive_fg_color_breeze ${WAYBAR_INACTIVE};
+@define-color insensitive_fg_color_breeze ${inactive};
 @define-color insensitive_bg_color_breeze ${TERM_BLACK};
 @define-color insensitive_base_color_breeze ${TERM_BLACK};
-@define-color insensitive_base_fg_color_breeze ${WAYBAR_INACTIVE};
+@define-color insensitive_base_fg_color_breeze ${inactive};
 @define-color insensitive_selected_bg_color_breeze ${TERM_BRIGHT_BLACK};
-@define-color insensitive_selected_fg_color_breeze ${WAYBAR_INACTIVE};
-@define-color insensitive_unfocused_fg_color_breeze ${WAYBAR_INACTIVE};
+@define-color insensitive_selected_fg_color_breeze ${inactive};
+@define-color insensitive_unfocused_fg_color_breeze ${inactive};
 @define-color insensitive_unfocused_bg_color_breeze ${TERM_BLACK};
 @define-color insensitive_unfocused_selected_bg_color_breeze ${TERM_BRIGHT_BLACK};
-@define-color insensitive_unfocused_selected_fg_color_breeze ${WAYBAR_INACTIVE};
-@define-color theme_unfocused_view_text_color_breeze ${WAYBAR_INACTIVE};
+@define-color insensitive_unfocused_selected_fg_color_breeze ${inactive};
+@define-color theme_unfocused_view_text_color_breeze ${inactive};
 @define-color theme_unfocused_view_bg_color_breeze ${TERM_BG};
 @define-color borders_breeze ${TERM_BRIGHT_BLACK};
 @define-color unfocused_borders_breeze ${TERM_BLACK};
@@ -265,11 +267,11 @@ write_gtk_settings() {
 @define-color theme_button_foreground_normal_breeze ${TERM_FG};
 @define-color theme_button_foreground_active_breeze ${selected_fg};
 @define-color theme_button_foreground_backdrop_breeze ${TERM_FG};
-@define-color theme_button_foreground_insensitive_breeze ${WAYBAR_INACTIVE};
-@define-color theme_button_foreground_active_insensitive_breeze ${WAYBAR_INACTIVE};
-@define-color theme_button_foreground_backdrop_insensitive_breeze ${WAYBAR_INACTIVE};
+@define-color theme_button_foreground_insensitive_breeze ${inactive};
+@define-color theme_button_foreground_active_insensitive_breeze ${inactive};
+@define-color theme_button_foreground_backdrop_insensitive_breeze ${inactive};
 @define-color theme_button_foreground_active_backdrop_breeze ${selected_fg};
-@define-color theme_button_foreground_active_backdrop_insensitive_breeze ${WAYBAR_INACTIVE};
+@define-color theme_button_foreground_active_backdrop_insensitive_breeze ${inactive};
 @define-color theme_button_decoration_hover_breeze ${accent};
 @define-color theme_button_decoration_focus_breeze ${accent};
 @define-color theme_button_decoration_hover_backdrop_breeze ${accent_alt};
@@ -282,16 +284,16 @@ write_gtk_settings() {
 @define-color theme_header_background_backdrop_breeze ${header_bg_inactive};
 @define-color theme_header_background_light_breeze ${header_bg};
 @define-color theme_header_foreground_breeze ${TERM_FG};
-@define-color theme_header_foreground_backdrop_breeze ${WAYBAR_INACTIVE};
-@define-color theme_header_foreground_insensitive_breeze ${WAYBAR_INACTIVE};
-@define-color theme_header_foreground_insensitive_backdrop_breeze ${WAYBAR_INACTIVE};
+@define-color theme_header_foreground_backdrop_breeze ${inactive};
+@define-color theme_header_foreground_insensitive_breeze ${inactive};
+@define-color theme_header_foreground_insensitive_backdrop_breeze ${inactive};
 @define-color theme_titlebar_background_breeze ${header_bg};
 @define-color theme_titlebar_background_backdrop_breeze ${header_bg_inactive};
 @define-color theme_titlebar_background_light_breeze ${header_bg};
 @define-color theme_titlebar_foreground_breeze ${TERM_FG};
-@define-color theme_titlebar_foreground_backdrop_breeze ${WAYBAR_INACTIVE};
-@define-color theme_titlebar_foreground_insensitive_breeze ${WAYBAR_INACTIVE};
-@define-color theme_titlebar_foreground_insensitive_backdrop_breeze ${WAYBAR_INACTIVE};
+@define-color theme_titlebar_foreground_backdrop_breeze ${inactive};
+@define-color theme_titlebar_foreground_insensitive_breeze ${inactive};
+@define-color theme_titlebar_foreground_insensitive_backdrop_breeze ${inactive};
 @define-color theme_view_active_decoration_color_breeze ${accent};
 @define-color theme_view_hover_decoration_color_breeze ${accent};
 @define-color theme_hovering_selected_bg_color_breeze ${accent_alt};

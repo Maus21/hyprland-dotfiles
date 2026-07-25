@@ -8,10 +8,15 @@ text/x-cmake=nvim.desktop;
 
 [Default Applications]
 application/json=nvim.desktop;
+application/xhtml+xml=helium.desktop;
 application/x-docbook+xml=nvim.desktop;
 application/x-yaml=nvim.desktop;
+text/html=helium.desktop;
 text/markdown=nvim.desktop;
 text/plain=nvim.desktop;
 text/x-cmake=nvim.desktop;
 video/mp4=mpv.desktop
-
+x-scheme-handler/about=helium.desktop;
+x-scheme-handler/http=helium.desktop;
+x-scheme-handler/https=helium.desktop;
+x-scheme-handler/unknown=helium.desktop;
