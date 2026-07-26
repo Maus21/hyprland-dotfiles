@@ -989,3 +989,12 @@ hl.window_rule({
 	float = false,
 	center = true,
 })
+
+-- Keep the installed browsers fully opaque and outside Hyprglass/Hyprland blur.
+hl.window_rule({
+	name = "opaque-browsers",
+	match = { class = "^(helium-browser|chromium)$" },
+	opacity = "1.0 override 1.0 override 1.0 override",
+	no_blur = true,
+	tag = "+hyprglass_disabled",
+})
