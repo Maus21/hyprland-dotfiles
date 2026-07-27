@@ -146,7 +146,9 @@ local animation_presets = {
 			{ "snap", 0.25, 1, 0.5, 1 },
 		},
 		springs = {
-			{ "easy", 1, 71.2633, 10.8273644 },
+			-- Hyprland 0.56 changed spring simulation timing. These upstream
+			-- compatibility values preserve the faster pre-0.56 feel.
+			{ "easy", 1, 238.1191, 24.21279333 },
 		},
 		animations = {
 			{ "global", true, 1.5, "snap" },
@@ -954,6 +956,7 @@ hl.window_rule({
 	match = { class = ".*satty.*" },
 	float = true, -- Makes the window hover
 	center = true, -- Optional: snaps it to the middle of your screen
+	no_anim = true,
 })
 
 -- Float screenshot window for satty
@@ -971,6 +974,11 @@ hl.windowrulev2 = {
 --     no_anim = true,
 -- })
 -- overlayLayerRule:set_enabled(false)
+hl.layer_rule({
+	name = "no-anim-screenshot-selection",
+	match = { namespace = "^selection$" },
+	no_anim = true,
+})
 
 -- Hyprland-run windowrule
 hl.window_rule({
