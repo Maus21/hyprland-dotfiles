@@ -956,7 +956,6 @@ hl.window_rule({
 	match = { class = ".*satty.*" },
 	float = true, -- Makes the window hover
 	center = true, -- Optional: snaps it to the middle of your screen
-	no_anim = true,
 })
 
 -- Float screenshot window for satty
