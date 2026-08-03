@@ -50,4 +50,22 @@ DOTFILES_TARGET_HOME="$dry_home" "$repo_root/install.sh" --dry-run --skip-packag
 test -z "$(find "$dry_home" -mindepth 1 -print -quit)"
 rmdir "$dry_home"
 
+fake_bin="$test_home/fake-bin"
+mkdir -p "$fake_bin"
+cat >"$fake_bin/pacman" <<'EOF'
+#!/usr/bin/env bash
+if [ "${1:-}" = "-Q" ] && [ "${2:-}" = "pipewire-alsa" ]; then
+  exit 0
+fi
+exit 1
+EOF
+chmod +x "$fake_bin/pacman"
+package_dry_home="$(mktemp -d)"
+package_dry_output="$(PATH="$fake_bin:$PATH" DOTFILES_TARGET_HOME="$package_dry_home" \
+  "$repo_root/install.sh" --dry-run --skip-services)"
+rg -q '^\+ yay .*tide-island' <<<"$package_dry_output"
+! rg -q '^\+ yay .*pipewire-alsa' <<<"$package_dry_output"
+test -z "$(find "$package_dry_home" -mindepth 1 -print -quit)"
+rmdir "$package_dry_home"
+
 printf 'Smoke test passed for %s\n' "$test_home"

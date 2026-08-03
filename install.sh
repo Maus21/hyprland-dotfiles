@@ -71,9 +71,24 @@ bootstrap_yay() {
 }
 
 install_packages() {
+  local declared_packages=()
   local packages=()
-  mapfile -t packages < <(sed -e '/^[[:space:]]*#/d' -e '/^[[:space:]]*$/d' \
+  local package_name
+
+  mapfile -t declared_packages < <(sed -e '/^[[:space:]]*#/d' -e '/^[[:space:]]*$/d' \
     "$repo_root/packages/pacman.txt" "$repo_root/packages/aur.txt")
+
+  for package_name in "${declared_packages[@]}"; do
+    if ! pacman -Q "$package_name" >/dev/null 2>&1; then
+      packages+=("$package_name")
+    fi
+  done
+
+  if [ "${#packages[@]}" -eq 0 ]; then
+    printf 'All declared packages are already installed.\n'
+    return
+  fi
+
   bootstrap_yay
   say_run yay -S --needed --noconfirm "${packages[@]}"
 }
