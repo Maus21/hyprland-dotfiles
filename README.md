@@ -21,7 +21,7 @@ excluded.
 
 ## Fresh CachyOS install
 
-Install the tools needed to clone a private LFS repository:
+Install the tools needed to clone this public LFS repository:
 
 ```bash
 sudo pacman -S --needed git git-lfs base-devel
@@ -36,6 +36,8 @@ git lfs pull
 The normal install may ask for sudo while installing repository/AUR packages.
 Existing unmanaged files are moved under
 `~/.dotfiles-backups/YYYYMMDD-HHMMSS/`; nothing is silently overwritten.
+The installer also verifies the commands required by Tide Island and the
+`Super+Shift+S` screenshot workflow before reporting success.
 
 Start Hyprland once, then generate the local display profile:
 
@@ -45,6 +47,8 @@ Start Hyprland once, then generate the local display profile:
 
 The generator prefers an external display as primary, assigns workspaces 1–5
 to it and 6–10 to a second display, or assigns all ten to the only display.
+It also marks that output as XWayland primary so Wine/Proton games inherit the
+same display choice.
 Its `~/.config/hypr/hardware.lua` output is intentionally ignored by Git.
 
 Useful installer options:

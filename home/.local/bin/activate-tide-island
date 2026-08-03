@@ -5,6 +5,7 @@ yay -S --needed tide-island
 
 systemctl --user daemon-reload
 systemctl --user disable --now tide-island.service >/dev/null 2>&1 || true
+systemctl --user disable --now tide-island-lorenzo.service >/dev/null 2>&1 || true
 
 pkill -x waybar >/dev/null 2>&1 || true
 quickshell kill --any-display -p /usr/share/tide-island >/dev/null 2>&1 || true

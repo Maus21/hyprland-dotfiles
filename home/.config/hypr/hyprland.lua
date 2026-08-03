@@ -45,6 +45,7 @@ end)
 
 hl.env("XCURSOR_SIZE", "24")
 hl.env("HYPRCURSOR_SIZE", "24")
+hl.env("XCURSOR_THEME", "Bibata-Modern-Classic")
 
 -----------------------
 ----- PERMISSIONS -----
@@ -72,9 +73,14 @@ hl.env("HYPRCURSOR_SIZE", "24")
 hl.config({
 	general = {
 		gaps_in = 5,
-		gaps_out = 20,
+		gaps_out = {
+			top = 12,
+			right = 20,
+			bottom = 20,
+			left = 20,
+		},
 
-		border_size = 1,
+		border_size = 0,
 
 		col = {
 			active_border = {
@@ -96,7 +102,7 @@ hl.config({
 	},
 
 	decoration = {
-		rounding = 10,
+		rounding = 18,
 		rounding_power = 2,
 
 		-- Change transparency of focused and unfocused windows
@@ -105,9 +111,10 @@ hl.config({
 
 		shadow = {
 			enabled = true,
-			range = 20,
-			render_power = 3,
-			color = 0xee1a1a1a,
+			range = 14,
+			render_power = 2,
+			color = 0x50101010,
+			offset = { 0, 2 },
 		},
 
 		blur = {
@@ -128,12 +135,45 @@ hl.config({
 -- Animation presets
 -- Change only this value to test a preset. "current" preserves the setup that
 -- was active before the HyDE presets were added.
-local active_animation_preset = "optimized"
+local active_animation_preset = "Simple"
 
 -- Converted from HyDE commit a51460a7b1a822ee7194318b60a38850f711b923.
 -- Curve format: { name, x0, y0, x1, y1 }
 -- Animation format: { leaf, enabled, speed, bezier, style }
 local animation_presets = {
+	Simple = {
+		enabled = true,
+		curves = {
+			{ "SimpleSmoothOut", 0.36, 0, 0.66, -0.56 },
+			{ "SimpleSmoothIn", 0.25, 1, 0.5, 1 },
+			{ "SimpleOvershot", 0.05, 0.9, 0.1, 1.05 },
+			{ "SimpleSoftSnap", 0.4, 0, 0.2, 1 },
+			{ "SimpleFluent", 0.0, 0.0, 0.2, 1.0 },
+			{ "SimpleEaseInOutExpo", 0.87, 0, 0.13, 1 },
+		},
+		animations = {
+			{ "windows", true, 5, "SimpleOvershot", "popin 80%" },
+			{ "windowsIn", true, 5, "SimpleOvershot", "popin 80%" },
+			{ "windowsOut", true, 4, "SimpleSmoothOut", "popin 95%" },
+			{ "windowsMove", true, 4, "SimpleSoftSnap" },
+
+			{ "layersIn", true, 7, "SimpleSmoothIn", "slide right" },
+			{ "layersOut", true, 8, "SimpleSmoothOut", "slide right" },
+
+			{ "fade", true, 4, "SimpleSmoothIn" },
+			{ "fadeIn", true, 4, "SimpleSmoothIn" },
+			{ "fadeOut", true, 4, "SimpleSmoothOut" },
+			{ "fadeSwitch", true, 4, "SimpleSmoothIn" },
+			{ "fadeShadow", true, 4, "SimpleSmoothIn" },
+			{ "fadeDim", true, 4, "SimpleSmoothIn" },
+			{ "fadeDpms", true, 4, "SimpleSmoothIn" },
+			{ "fadeLayers", true, 3, "SimpleSmoothIn" },
+
+			{ "workspaces", true, 5, "SimpleOvershot", "slidefade 30%" },
+			{ "specialWorkspace", true, 5, "SimpleOvershot", "slidefadevert 30%" },
+		},
+	},
+
 	current = {
 		enabled = true,
 		curves = {
@@ -385,7 +425,7 @@ local animation_presets = {
 		animations = {
 			{ "windows", true, 6, "wind", "slide" },
 			{ "windowsIn", true, 5, "winIn", "slide" },
-			{ "windowsOut", true, 3, "smoothOut", "slide" },
+			{ "windowsOut", true, 3, "smoothOut", "slidefade" },
 			{ "windowsMove", true, 5, "wind", "slide" },
 			{ "border", true, 1, "liner" },
 			{ "fade", true, 3, "smoothOut" },
@@ -623,6 +663,14 @@ local animation_presets = {
 local selected_animation_preset =
 	assert(animation_presets[active_animation_preset], "Unknown animation preset: " .. active_animation_preset)
 
+-- Keep the three tuned presets unchanged; make the remaining presets 15% faster.
+local unchanged_animation_speeds = {
+	current = true,
+	fast = true,
+	optimized = true,
+}
+local animation_duration_multiplier = unchanged_animation_speeds[active_animation_preset] and 1 or 0.85
+
 hl.config({
 	animations = {
 		enabled = selected_animation_preset.enabled,
@@ -652,7 +700,7 @@ for _, animation in ipairs(selected_animation_preset.animations or {}) do
 	}
 
 	if animation[2] then
-		options.speed = animation[3]
+		options.speed = animation[3] * animation_duration_multiplier
 		options.bezier = animation[4]
 		options.style = animation[5]
 	end
@@ -774,6 +822,7 @@ hl.bind(
 hl.bind(mainMod .. " + P", hl.dsp.window.pseudo())
 hl.bind(mainMod .. " + J", hl.dsp.layout("togglesplit")) -- dwindle only
 hl.bind(mainMod .. " + F", hl.dsp.window.fullscreen({ mode = "maximized", action = "toggle" }))
+hl.bind(mainMod .. " + SHIFT + F", hl.dsp.window.fullscreen({ mode = "fullscreen", action = "toggle" }))
 hl.bind(mainMod .. " + B", hl.dsp.exec_cmd("helium-browser"))
 hl.bind(mainMod .. " + CTRL + B", hl.dsp.exec_cmd("chromium"))
 hl.bind(
@@ -911,6 +960,13 @@ hl.bind(
 hl.bind("XF86MonBrightnessUp", hl.dsp.exec_cmd("brightnessctl -e4 -n2 set 5%+"), { locked = true, repeating = true })
 hl.bind("XF86MonBrightnessDown", hl.dsp.exec_cmd("brightnessctl -e4 -n2 set 5%-"), { locked = true, repeating = true })
 
+-- Keep airplane mode disabled if the laptop radio shortcut is pressed.
+hl.bind(
+	"XF86RFKill",
+	hl.dsp.exec_cmd("sh -c 'sleep 0.2; /usr/bin/rfkill unblock all; /usr/bin/nmcli radio all on'"),
+	{ locked = true }
+)
+
 -- Requires playerctl
 hl.bind("XF86AudioNext", hl.dsp.exec_cmd("playerctl next"), { locked = true })
 hl.bind("XF86AudioPause", hl.dsp.exec_cmd("playerctl play-pause"), { locked = true })
@@ -1005,3 +1061,44 @@ hl.window_rule({
 	no_blur = true,
 	tag = "+hyprglass_disabled",
 })
+
+if hl.plugin.hyprglass then
+	local hg = hl.plugin.hyprglass
+
+	hg.config({
+		enabled = true,
+		default_theme = "dark",
+		default_preset = "apple",
+		layers = { enabled = true },
+	})
+
+	-- Keep Slurp's full-screen region selector clear and readable.
+	hg.layer("selection", { exclude = true })
+
+	hg.preset("apple0", {
+		glass_opacity = 0.8,
+		blur_strength = 1.5,
+		dark = { brightness = 0.7 },
+		light = { brightness = 1.2 },
+	})
+
+	hg.preset("contrasted", {
+		inherits = "high_contrast",
+		contrast = 1.2,
+		adaptive_dim = 1.5,
+		dark = { tint_color = 0x02142aa9 },
+	})
+
+	hg.preset("apple", {
+		blur_strength = 2.2,
+		blur_iterations = 3,
+		refraction_strength = 0.55,
+		chromatic_aberration = 0.3,
+		fresnel_strength = 0.5,
+		specular_strength = 0.75,
+		edge_thickness = 0.05,
+		lens_distortion = 0.3,
+		dark = { brightness = 0.82, contrast = 0.90, saturation = 0.80, vibrancy = 0.15, adaptive_dim = 0.4 },
+		light = { brightness = 1.12, contrast = 0.92, saturation = 0.85, vibrancy = 0.12, adaptive_boost = 0.4 },
+	})
+end

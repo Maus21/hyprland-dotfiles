@@ -45,6 +45,10 @@ trap 'rm -f "$tmp"' EXIT
     render_monitor "$secondary"
   fi
   printf '\n'
+  printf 'hl.on("hyprland.start", function()\n'
+  printf '\thl.exec_cmd("xrandr --output %s --primary")\n' "$primary"
+  printf 'end)\n'
+  printf '\n'
   for workspace in 1 2 3 4 5; do
     printf 'hl.workspace_rule({ workspace = "%s", monitor = "%s", persistent = true })\n' "$workspace" "$primary"
   done

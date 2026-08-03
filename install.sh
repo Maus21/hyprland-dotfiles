@@ -78,6 +78,35 @@ install_packages() {
   say_run yay -S --needed --noconfirm "${packages[@]}"
 }
 
+verify_required_commands() {
+  local command_name
+  local missing=()
+  local required_commands=(
+    awww brightnessctl easyeffects grim helium-browser hyprshot jq kitty
+    magick playerctl powerprofilesctl python3 qalc quickshell satty slurp
+    tide-island wl-copy wpctl xrandr yazi
+  )
+
+  for command_name in "${required_commands[@]}"; do
+    if ! command -v "$command_name" >/dev/null 2>&1; then
+      missing+=("$command_name")
+    fi
+  done
+
+  if [ "${#missing[@]}" -eq 0 ]; then
+    return
+  fi
+
+  printf 'Missing required desktop commands: %s\n' "${missing[*]}" >&2
+  if $skip_packages; then
+    printf 'Warning: --skip-packages was used; install the missing dependencies before logging in.\n' >&2
+    return
+  fi
+
+  printf 'The package stage did not provide every required command; refusing to report a complete install.\n' >&2
+  exit 1
+}
+
 backup_destination() {
   local destination="$1"
   local relative="$2"
@@ -147,12 +176,22 @@ post_install() {
   fi
   if ! $skip_services && [ "$target_home" = "$HOME" ] && command -v systemctl >/dev/null 2>&1; then
     say_run systemctl --user daemon-reload
+    if [ -e "$target_home/.config/systemd/user/tide-island.service" ] \
+      || [ -e /usr/lib/systemd/user/tide-island.service ]; then
+      say_run systemctl --user disable --now tide-island.service
+    fi
+    if [ -e "$target_home/.config/systemd/user/tide-island-lorenzo.service" ]; then
+      say_run systemctl --user disable --now tide-island-lorenzo.service
+    fi
     say_run systemctl --user enable --now tide-island-dotfiles.service
   fi
 }
 
 if ! $skip_packages; then
   install_packages
+fi
+if ! $dry_run && [ "$target_home" = "$HOME" ]; then
+  verify_required_commands
 fi
 link_home
 render_templates

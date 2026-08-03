@@ -20,6 +20,7 @@ PATH="$test_root/bin:$PATH" MONITOR_FIXTURE="$repo_root/tests/fixtures/monitors-
 dual_config="$dual_home/.config/hypr/hardware.lua"
 rg -q 'workspace = "1", monitor = "DP-3"' "$dual_config"
 rg -q 'workspace = "6", monitor = "eDP-1"' "$dual_config"
+rg -q 'xrandr --output DP-3 --primary' "$dual_config"
 
 single_home="$test_root/single-home"
 PATH="$test_root/bin:$PATH" MONITOR_FIXTURE="$repo_root/tests/fixtures/monitors-single.json" \
@@ -27,5 +28,6 @@ PATH="$test_root/bin:$PATH" MONITOR_FIXTURE="$repo_root/tests/fixtures/monitors-
 single_config="$single_home/.config/hypr/hardware.lua"
 rg -q 'workspace = "1", monitor = "eDP-2"' "$single_config"
 rg -q 'workspace = "10", monitor = "eDP-2"' "$single_config"
+rg -q 'xrandr --output eDP-2 --primary' "$single_config"
 
 printf 'Display fixture tests passed.\n'

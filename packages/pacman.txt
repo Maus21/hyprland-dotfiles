@@ -19,9 +19,12 @@ git-lfs
 github-cli
 grim
 hyprland
+hyprsunset
 hyprshot
+imagemagick
 jq
 kitty
+libqalculate
 libnotify
 mpv
 neovim
@@ -34,6 +37,7 @@ pipewire-alsa
 pipewire-pulse
 playerctl
 power-profiles-daemon
+python
 quickshell
 satty
 slurp
@@ -42,5 +46,6 @@ ueberzugpp
 wireplumber
 wl-clipboard
 xdg-desktop-portal-hyprland
+xorg-xrandr
 yazi
 zoxide
