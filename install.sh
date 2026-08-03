@@ -72,25 +72,40 @@ bootstrap_yay() {
 
 install_packages() {
   local declared_packages=()
-  local packages=()
+  local required_packages=()
+  local optional_packages=()
   local package_name
 
   mapfile -t declared_packages < <(sed -e '/^[[:space:]]*#/d' -e '/^[[:space:]]*$/d' \
     "$repo_root/packages/pacman.txt" "$repo_root/packages/aur.txt")
 
   for package_name in "${declared_packages[@]}"; do
-    if ! pacman -Q "$package_name" >/dev/null 2>&1; then
-      packages+=("$package_name")
+    if pacman -Q "$package_name" >/dev/null 2>&1; then
+      continue
     fi
+
+    case "$package_name" in
+      cava|github-cli|hyprsunset) optional_packages+=("$package_name") ;;
+      *) required_packages+=("$package_name") ;;
+    esac
   done
 
-  if [ "${#packages[@]}" -eq 0 ]; then
+  if [ "${#required_packages[@]}" -eq 0 ] && [ "${#optional_packages[@]}" -eq 0 ]; then
     printf 'All declared packages are already installed.\n'
     return
   fi
 
   bootstrap_yay
-  say_run yay -S --needed --noconfirm "${packages[@]}"
+
+  if [ "${#required_packages[@]}" -gt 0 ]; then
+    say_run yay -S --needed --noconfirm "${required_packages[@]}"
+  fi
+
+  for package_name in "${optional_packages[@]}"; do
+    if ! say_run yay -S --needed --noconfirm "$package_name"; then
+      printf 'Warning: optional package %s could not be installed; continuing.\n' "$package_name" >&2
+    fi
+  done
 }
 
 verify_required_commands() {

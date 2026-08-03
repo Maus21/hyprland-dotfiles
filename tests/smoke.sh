@@ -65,6 +65,8 @@ package_dry_output="$(PATH="$fake_bin:$PATH" DOTFILES_TARGET_HOME="$package_dry_
   "$repo_root/install.sh" --dry-run --skip-services)"
 rg -q '^\+ yay .*tide-island' <<<"$package_dry_output"
 ! rg -q '^\+ yay .*pipewire-alsa' <<<"$package_dry_output"
+! rg -q '^\+ yay .*github-cli.*tide-island' <<<"$package_dry_output"
+rg -q '^\+ yay .*github-cli[[:space:]]*$' <<<"$package_dry_output"
 test -z "$(find "$package_dry_home" -mindepth 1 -print -quit)"
 rmdir "$package_dry_home"
 
