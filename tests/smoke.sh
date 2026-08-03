@@ -16,6 +16,10 @@ test "$(find "$test_home/.dotfiles-backups" -type f | wc -l)" -eq "$backup_count
 
 test -L "$test_home/.config/hypr/hyprland.lua"
 test -L "$test_home/.config/hypr/themes/noir.theme"
+test -L "$test_home/.config/kitty/kitty.conf"
+rg -qx 'confirm_os_window_close -1' "$test_home/.config/kitty/kitty.conf"
+rg -qF 'kitty @ load-config --override confirm_os_window_close=0' "$test_home/.config/fish/config.fish"
+rg -qF 'kitty @ load-config --ignore-overrides' "$test_home/.config/fish/config.fish"
 test -L "$test_home/.config/fish/config.fish"
 test -L "$test_home/.local/share/anifetch-cat.gif"
 test -L "$test_home/Pictures/wallpapers/jpn.jpg"
