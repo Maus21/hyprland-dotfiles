@@ -27,6 +27,17 @@ test -x "$test_home/.local/bin/tide-launch-desktop"
 rg -qF 'prefers_non_default_gpu="$(entry_value PrefersNonDefaultGPU' "$test_home/.local/bin/tide-launch-desktop"
 rg -qF 'launch_prefix=(prime-run)' "$test_home/.local/bin/tide-launch-desktop"
 "$repo_root/tests/tide-launch-desktop.sh" "$test_home/.local/bin/tide-launch-desktop"
+test -x "$test_home/.local/bin/start-tide-island"
+bash -n "$test_home/.local/bin/start-tide-island"
+rg -qF 'systemctl --user import-environment HYPRLAND_INSTANCE_SIGNATURE WAYLAND_DISPLAY' \
+  "$test_home/.local/bin/start-tide-island"
+rg -qF 'service_signature' "$test_home/.local/bin/start-tide-island"
+rg -qF 'systemctl --user restart tide-island-dotfiles.service' \
+  "$test_home/.local/bin/start-tide-island"
+rg -qF 'say_run systemctl --user import-environment HYPRLAND_INSTANCE_SIGNATURE WAYLAND_DISPLAY' \
+  "$repo_root/install.sh"
+rg -qF 'say_run systemctl --user restart tide-island-dotfiles.service' \
+  "$repo_root/install.sh"
 test -L "$test_home/.local/share/applications/bluetui.desktop"
 test -L "$test_home/.local/share/applications/nmtui.desktop"
 test -f "$test_home/.config/tide-island/userconfig.json"

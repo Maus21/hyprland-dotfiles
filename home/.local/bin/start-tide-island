@@ -13,6 +13,22 @@ if ! command -v tide-island >/dev/null 2>&1; then
   exit 127
 fi
 
+systemctl --user import-environment HYPRLAND_INSTANCE_SIGNATURE WAYLAND_DISPLAY >/dev/null 2>&1 || true
+
+service_pid="$(systemctl --user show --property=MainPID --value tide-island-dotfiles.service 2>/dev/null || true)"
+service_signature=""
+if [[ "$service_pid" =~ ^[0-9]+$ ]] && (( service_pid > 0 )) && [[ -r "/proc/$service_pid/environ" ]]; then
+  service_signature="$(tr '\0' '\n' < "/proc/$service_pid/environ" | sed -n 's/^HYPRLAND_INSTANCE_SIGNATURE=//p')"
+fi
+
+if [[ -n "${HYPRLAND_INSTANCE_SIGNATURE:-}" ]] \
+  && [[ -n "$service_pid" ]] \
+  && [[ "$service_pid" != "0" ]] \
+  && [[ "$service_signature" != "$HYPRLAND_INSTANCE_SIGNATURE" ]]; then
+  systemctl --user restart tide-island-dotfiles.service
+  exit 0
+fi
+
 if command -v quickshell >/dev/null 2>&1 \
   && quickshell ipc --any-display -p "$local_qml" call island show >/dev/null 2>&1; then
   exit 0

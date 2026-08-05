@@ -213,7 +213,13 @@ post_install() {
     if [ -e "$target_home/.config/systemd/user/tide-island-lorenzo.service" ]; then
       say_run systemctl --user disable --now tide-island-lorenzo.service
     fi
-    say_run systemctl --user enable --now tide-island-dotfiles.service
+    say_run systemctl --user enable tide-island-dotfiles.service
+    if [ -n "${HYPRLAND_INSTANCE_SIGNATURE:-}" ]; then
+      say_run systemctl --user import-environment HYPRLAND_INSTANCE_SIGNATURE WAYLAND_DISPLAY
+      say_run systemctl --user restart tide-island-dotfiles.service
+    else
+      say_run systemctl --user start tide-island-dotfiles.service
+    fi
   fi
 }
 
