@@ -6,10 +6,11 @@ target_home="${DOTFILES_TARGET_HOME:-$HOME}"
 dry_run=false
 skip_packages=false
 skip_services=false
+skip_rishot=false
 
 usage() {
   cat <<'EOF'
-Usage: ./install.sh [--dry-run] [--skip-packages] [--skip-services]
+Usage: ./install.sh [--dry-run] [--skip-packages] [--skip-services] [--skip-rishot]
 
 Environment:
   DOTFILES_TARGET_HOME  Install into another home (useful for testing).
@@ -21,6 +22,7 @@ while [ "$#" -gt 0 ]; do
     --dry-run) dry_run=true ;;
     --skip-packages) skip_packages=true ;;
     --skip-services) skip_services=true ;;
+    --skip-rishot) skip_rishot=true ;;
     -h|--help) usage; exit 0 ;;
     *) printf 'Unknown option: %s\n' "$1" >&2; usage >&2; exit 2 ;;
   esac
@@ -112,10 +114,13 @@ verify_required_commands() {
   local command_name
   local missing=()
   local required_commands=(
-    awww brightnessctl easyeffects grim helium-browser hyprshot jq kitty
-    magick playerctl powerprofilesctl python3 qalc quickshell satty slurp
-    tide-island wl-copy wpctl xrandr yazi
+    awww brightnessctl easyeffects helium-browser jq kitty magick playerctl
+    powerprofilesctl python3 qalc quickshell tide-island wl-copy wpctl xrandr yazi
   )
+
+  if ! $skip_rishot; then
+    required_commands+=(rishot)
+  fi
 
   for command_name in "${required_commands[@]}"; do
     if ! command -v "$command_name" >/dev/null 2>&1; then
@@ -165,6 +170,36 @@ link_home() {
     say_run mkdir -p "$(dirname "$destination")"
     say_run ln -s -- "$source" "$destination"
   done < <(find "$repo_root/home" \( -type f -o -type l \) -print0)
+}
+
+install_rishot() {
+  local rishot_root="$target_home/.local/share/rishot"
+  local rishot_repo="https://github.com/Gakuseei/rishot.git"
+  local link_path link_target relative
+
+  if [ -d "$rishot_root/.git" ]; then
+    printf 'Preserving existing rishot checkout: %s\n' "$rishot_root"
+  else
+    if [ -e "$rishot_root" ] || [ -L "$rishot_root" ]; then
+      backup_destination "$rishot_root" ".local/share/rishot"
+    fi
+    say_run mkdir -p "$(dirname "$rishot_root")"
+    say_run git clone --depth 1 "$rishot_repo" "$rishot_root"
+  fi
+
+  while IFS='|' read -r link_path link_target; do
+    relative="${link_path#"$target_home/"}"
+    if [ -L "$link_path" ] && [ "$(readlink -- "$link_path")" = "$link_target" ]; then
+      continue
+    fi
+    backup_destination "$link_path" "$relative"
+    say_run mkdir -p "$(dirname "$link_path")"
+    say_run ln -s -- "$link_target" "$link_path"
+  done <<EOF
+$target_home/.local/bin/rishot|$rishot_root/bin/rishot
+$target_home/.local/share/applications/rishot.desktop|$rishot_root/rishot.desktop
+$target_home/.local/share/icons/hicolor/scalable/apps/rishot.svg|$rishot_root/packaging/rishot.svg
+EOF
 }
 
 render_templates() {
@@ -226,11 +261,14 @@ post_install() {
 if ! $skip_packages; then
   install_packages
 fi
+link_home
+render_templates
+if ! $skip_rishot; then
+  install_rishot
+fi
 if ! $dry_run && [ "$target_home" = "$HOME" ]; then
   verify_required_commands
 fi
-link_home
-render_templates
 post_install
 
 printf '\nInstall complete.\n'

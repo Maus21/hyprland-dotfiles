@@ -8,10 +8,10 @@ trap 'rm -rf -- "$test_home"' EXIT
 mkdir -p "$test_home/.config/kitty"
 printf 'unmanaged\n' >"$test_home/.config/kitty/kitty.conf"
 
-DOTFILES_TARGET_HOME="$test_home" "$repo_root/install.sh" --skip-packages --skip-services >/dev/null
+DOTFILES_TARGET_HOME="$test_home" "$repo_root/install.sh" --skip-packages --skip-services --skip-rishot >/dev/null
 backup_count="$(find "$test_home/.dotfiles-backups" -type f | wc -l)"
 test "$backup_count" -eq 1
-DOTFILES_TARGET_HOME="$test_home" "$repo_root/install.sh" --skip-packages --skip-services >/dev/null
+DOTFILES_TARGET_HOME="$test_home" "$repo_root/install.sh" --skip-packages --skip-services --skip-rishot >/dev/null
 test "$(find "$test_home/.dotfiles-backups" -type f | wc -l)" -eq "$backup_count"
 
 test -L "$test_home/.config/hypr/hyprland.lua"
@@ -46,10 +46,21 @@ rg -qF 'ExecStart=/usr/bin/tide-island' \
   "$test_home/.config/systemd/user/tide-island-dotfiles.service"
 rg -qF "$test_home/Pictures/wallpapers" "$test_home/.config/tide-island/userconfig.json"
 ! rg -q '/home/' "$test_home/.config/tide-island/userconfig.json"
+rg -qF '"wallpaperCustomCommandEnabled": false' "$test_home/.config/tide-island/userconfig.json"
+rg -qF '"wallpaperPath": ""' "$test_home/.config/tide-island/userconfig.json"
+rg -qF 'readonly property string wallpaperStatePath:' \
+  "$test_home/.local/share/tide-island-dotfiles/qml/island/WallpaperPickerLayer.qml"
+rg -qF "with open(state_path,'w',encoding='utf-8')" \
+  "$test_home/.local/share/tide-island-dotfiles/qml/island/WallpaperPickerLayer.qml"
+rg -qF 'function setWallpaper(wallpaperPath)' \
+  "$test_home/.local/share/tide-island-dotfiles/shell.qml"
+rg -qF 'call overview setWallpaper "$WALLPAPER"' \
+  "$test_home/.local/bin/hypr-theme-switcher"
 rg -qx 'helium-browser-bin' "$repo_root/packages/pacman.txt"
-rg -qx 'grim' "$repo_root/packages/pacman.txt"
-rg -qx 'hyprshot' "$repo_root/packages/pacman.txt"
-rg -qx 'slurp' "$repo_root/packages/pacman.txt"
+! rg -qx 'grim' "$repo_root/packages/pacman.txt"
+! rg -qx 'hyprshot' "$repo_root/packages/pacman.txt"
+! rg -qx 'satty' "$repo_root/packages/pacman.txt"
+! rg -qx 'slurp' "$repo_root/packages/pacman.txt"
 rg -qx 'libqalculate' "$repo_root/packages/pacman.txt"
 rg -qx 'imagemagick' "$repo_root/packages/pacman.txt"
 rg -qx 'quickshell' "$repo_root/packages/pacman.txt"
@@ -82,6 +93,7 @@ chmod +x "$fake_bin/pacman"
 package_dry_home="$(mktemp -d)"
 package_dry_output="$(PATH="$fake_bin:$PATH" DOTFILES_TARGET_HOME="$package_dry_home" \
   "$repo_root/install.sh" --dry-run --skip-services)"
+rg -q 'git clone --depth 1 https://github.com/Gakuseei/rishot.git' <<<"$package_dry_output"
 rg -q '^\+ yay .*tide-island' <<<"$package_dry_output"
 ! rg -q '^\+ yay .*pipewire-alsa' <<<"$package_dry_output"
 ! rg -q '^\+ yay .*github-cli.*tide-island' <<<"$package_dry_output"

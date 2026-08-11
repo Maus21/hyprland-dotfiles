@@ -12,6 +12,7 @@ into the target home, and keeps machine-specific display state out of Git.
 - EasyEffects, pavucontrol, PipeWire overrides, GTK styling, fonts, and icons
 - Helium as the default browser, Chromium as a fallback, and a safe extension restoration list
 - Bluetui and NetworkManager's `nmtui`, including desktop launchers
+- rishot for animated Wayland screenshots and annotation (`Super+Shift+S`)
 - The complete wallpaper library through Git LFS
 
 Browser profiles, cookies, passwords, histories, paired Bluetooth device IDs,
@@ -36,8 +37,9 @@ git lfs pull
 The normal install may ask for sudo while installing repository/AUR packages.
 Existing unmanaged files are moved under
 `~/.dotfiles-backups/YYYYMMDD-HHMMSS/`; nothing is silently overwritten.
-The installer also verifies the commands required by Tide Island and the
-`Super+Shift+S` screenshot workflow before reporting success.
+The installer also clones rishot into `~/.local/share/rishot`, links its
+launcher and desktop metadata, and verifies the commands required by Tide
+Island and the `Super+Shift+S` screenshot workflow before reporting success.
 
 Start Hyprland once, then generate the local display profile:
 
@@ -57,6 +59,7 @@ Useful installer options:
 --dry-run        Show package, backup, link, and service operations
 --skip-packages  Only restore configuration and assets
 --skip-services  Do not enable the Tide Island user service
+--skip-rishot    Do not clone or link the user-local rishot installation
 ```
 
 Set `DOTFILES_TARGET_HOME` to exercise the installer against a temporary home.

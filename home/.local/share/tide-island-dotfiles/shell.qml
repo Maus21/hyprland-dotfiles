@@ -71,12 +71,12 @@ Scope {
         path: StandardPaths.writableLocation(StandardPaths.GenericCacheLocation)
             + "/hypr-theme-switcher/current-wallpaper"
         watchChanges: true
-        preload: false
+        preload: true
         blockLoading: true
         printErrors: false
 
         onFileChanged: currentWallpaperSyncTimer.restart()
-        Component.onCompleted: shellRoot.syncCurrentWallpaper(true)
+        onLoaded: shellRoot.syncCurrentWallpaper(true)
     }
 
     Timer {
@@ -84,7 +84,7 @@ Scope {
 
         interval: 80
         repeat: false
-        onTriggered: shellRoot.syncCurrentWallpaper(true)
+        onTriggered: currentWallpaperState.reload()
     }
 
     function forEachWindow(callback) {
@@ -124,7 +124,6 @@ Scope {
         if (CompositorBackend.compositor === "niri")
             return;
 
-        shellRoot.syncCurrentWallpaper(true);
         shellRoot.forEachWindow((window) => window.prepareOverview());
     }
 
@@ -139,7 +138,6 @@ Scope {
         if (CompositorBackend.compositor === "niri")
             return;
 
-        shellRoot.syncCurrentWallpaper(true);
         shellRoot.forEachWindow((window) => window.openOverview());
     }
 
@@ -217,7 +215,6 @@ Scope {
     }
 
     function syncCurrentWallpaper(forceRefresh) {
-        currentWallpaperState.reload();
         const wallpaperPath = String(currentWallpaperState.text() || "").trim();
         if (wallpaperPath === "")
             return;
@@ -299,6 +296,10 @@ Scope {
 
         function refreshWallpaperCache() {
             shellRoot.refreshOverviewWallpaperCaches();
+        }
+
+        function setWallpaper(wallpaperPath: string) {
+            shellRoot.refreshOverviewWallpaperCaches(String(wallpaperPath || "").trim());
         }
     }
 

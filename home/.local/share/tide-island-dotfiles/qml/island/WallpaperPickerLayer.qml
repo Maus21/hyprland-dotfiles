@@ -60,6 +60,8 @@ FocusScope {
     readonly property int visibleWallpaperCount: searchActive ? filteredWallpapers.count : allWallpapers.count
     readonly property string cacheRoot: localPath(StandardPaths.writableLocation(StandardPaths.GenericCacheLocation))
         + "/quickshell/dynamic_island/wallpaper-picker"
+    readonly property string wallpaperStatePath: localPath(StandardPaths.writableLocation(StandardPaths.GenericCacheLocation))
+        + "/hypr-theme-switcher/current-wallpaper"
     readonly property string scanScript: "import hashlib,json,os,sys\n"
         + "cache_dir=sys.argv[1]\n"
         + "wallpaper_dir=os.path.expanduser(sys.argv[2])\n"
@@ -108,7 +110,7 @@ FocusScope {
         + "except Exception:\n"
         + "    pass\n"
     readonly property string applyScript: "import os,shutil,subprocess,sys\n"
-        + "source,target,transition,step,duration,fps,angle,pos,bezier,wave,invert_y,pywal_enabled=sys.argv[1:13]\n"
+        + "source,target,transition,step,duration,fps,angle,pos,bezier,wave,invert_y,pywal_enabled,state_path=sys.argv[1:14]\n"
         + "if not source:\n"
         + "    sys.exit(2)\n"
         + "applied=source\n"
@@ -122,6 +124,11 @@ FocusScope {
         + "if invert_y == 'true':\n"
         + "    cmd.append('--invert-y')\n"
         + "result=subprocess.run(cmd,stdout=subprocess.DEVNULL,stderr=subprocess.DEVNULL)\n"
+        + "if result.returncode == 0:\n"
+        + "    os.makedirs(os.path.dirname(state_path),exist_ok=True)\n"
+        // FileView watches this inode; write in place so it receives the change.
+        + "    with open(state_path,'w',encoding='utf-8') as f:\n"
+        + "        f.write(applied+'\\n')\n"
         + "if pywal_enabled == 'true' and result.returncode == 0:\n"
         + "    subprocess.run(['wal','-i',applied],stdout=subprocess.DEVNULL,stderr=subprocess.DEVNULL)\n"
         + "sys.exit(result.returncode)\n"
@@ -525,7 +532,8 @@ FocusScope {
             root.transitionBezier,
             root.transitionWave,
             root.transitionInvertY ? "true" : "false",
-            root.pywalEnabled ? "true" : "false"
+            root.pywalEnabled ? "true" : "false",
+            root.wallpaperStatePath
         ]
         onExited: function(exitCode) {
             running = false;

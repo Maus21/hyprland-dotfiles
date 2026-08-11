@@ -17,10 +17,8 @@ fish
 git
 git-lfs
 github-cli
-grim
 hyprland
 hyprsunset
-hyprshot
 imagemagick
 jq
 kitty
@@ -39,8 +37,6 @@ playerctl
 power-profiles-daemon
 python
 quickshell
-satty
-slurp
 ttf-cascadia-code-nerd
 ueberzugpp
 wireplumber

@@ -434,6 +434,8 @@ apply_wallpaper() {
 
 		hyprctl monitors -j >/dev/null 2>&1 || return 0
 		"$HOME/.local/bin/restore-wallpaper" >/dev/null 2>&1 || true
+		quickshell ipc --any-display -p "$HOME/.local/share/tide-island-dotfiles" \
+			call overview setWallpaper "$WALLPAPER" >/dev/null 2>&1 || true
 	fi
 }
 

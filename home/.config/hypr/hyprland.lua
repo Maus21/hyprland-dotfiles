@@ -829,7 +829,7 @@ hl.bind(
 	mainMod .. " + SHIFT + B",
 	hl.dsp.exec_cmd(tide_ipc .. " call island toggle")
 )
-hl.bind(mainMod .. " + SHIFT + S", hl.dsp.exec_cmd("sh -c 'hyprshot -m region --raw | satty --filename -'"))
+hl.bind(mainMod .. " + SHIFT + S", hl.dsp.exec_cmd("rishot"))
 hl.bind(
 	mainMod .. " + SHIFT + T",
 	hl.dsp.exec_cmd(tide_ipc .. " call tide toggleThemeSwitcher")
@@ -1007,21 +1007,6 @@ hl.window_rule({
 	no_focus = true,
 })
 
-hl.window_rule({
-	name = "float-satty",
-	match = { class = ".*satty.*" },
-	float = true, -- Makes the window hover
-	center = true, -- Optional: snaps it to the middle of your screen
-})
-
--- Float screenshot window for satty
-
-hl.windowrulev2 = {
-
-	"float, class:^com.gabm.satty$",
-	"size 80% 80%, class:^com.gabm.satty$",
-	"center, class:^com.gabm.satty$",
-}
 -- Layer rules also return a handle.
 -- local overlayLayerRule = hl.layer_rule({
 --     name  = "no-anim-overlay",
@@ -1030,8 +1015,8 @@ hl.windowrulev2 = {
 -- })
 -- overlayLayerRule:set_enabled(false)
 hl.layer_rule({
-	name = "no-anim-screenshot-selection",
-	match = { namespace = "^selection$" },
+	name = "no-anim-rishot",
+	match = { namespace = "^rishot$" },
 	no_anim = true,
 })
 
@@ -1072,8 +1057,8 @@ if hl.plugin.hyprglass then
 		layers = { enabled = true },
 	})
 
-	-- Keep Slurp's full-screen region selector clear and readable.
-	hg.layer("selection", { exclude = true })
+	-- Keep rishot's full-screen capture overlay clear and readable.
+	hg.layer("rishot", { exclude = true })
 
 	hg.preset("apple0", {
 		glass_opacity = 0.8,
