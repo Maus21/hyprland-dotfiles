@@ -3,9 +3,14 @@ import QtQuick.Shapes
 import Quickshell.Bluetooth
 import Quickshell.Io
 import IslandBackend
+import "../connectivity" as Connectivity
 
 Item {
     id: controlCenter
+
+    Connectivity.NetworkStatus {
+        id: networkStatus
+    }
 
     signal connectivityPanelRequested(string kind, bool open)
     signal focusModeChanged(bool enabled)
@@ -116,6 +121,7 @@ Item {
     readonly property color buttonFillHover: Qt.lighter(textPrimary, 1.08)
     readonly property color buttonFillPressed: Qt.darker(textPrimary, 1.14)
     readonly property string wifiGlyph: ""
+    readonly property string ethernetGlyph: ""
     readonly property string bluetoothGlyph: ""
     readonly property string chargingIconGlyph: "\uf0e7"
     readonly property string brightnessIconGlyph: "\u{F00DF}"
@@ -168,6 +174,11 @@ Item {
     readonly property bool hasConnectivityPrompt: wifiPendingPasswordSsid.length > 0 || bluetoothPairingActive
     readonly property bool anyConnectivityPanelOpen: wifiPanelOpen || bluetoothPanelOpen
     readonly property string wifiStatusText: wifiController ? wifiController.statusText : "Unavailable"
+    readonly property string networkCardGlyph: networkStatus.ethernetConnected ? ethernetGlyph : wifiGlyph
+    readonly property string networkCardTitle: networkStatus.ethernetConnected ? "Ethernet" : "Wi-Fi"
+    readonly property string networkCardStatusText: networkStatus.ethernetConnected
+        ? networkStatus.statusText
+        : wifiStatusText
     readonly property string bluetoothStatusText: buildBluetoothStatusText()
     readonly property string bluetoothAvailabilityMessage: bluetoothAvailable ? "" : "No Bluetooth adapter is available."
     readonly property string batteryModeStatusText: buildBatteryModeStatusText()
@@ -1323,8 +1334,10 @@ Item {
                         anchors.leftMargin: 14
                         anchors.top: parent.top
                         anchors.topMargin: 12
-                        text: wifiGlyph
-                        color: wifiEnabled ? cardAccent : controlCenter.textSecondary
+                        text: controlCenter.networkCardGlyph
+                        color: networkStatus.ethernetConnected
+                            ? controlCenter.cardAccentAlt
+                            : (controlCenter.wifiEnabled ? controlCenter.cardAccent : controlCenter.textSecondary)
                         font.pixelSize: 18
                         font.family: iconFontFamily
                     }
@@ -1385,7 +1398,7 @@ Item {
                             anchors.right: wifiChevron.left
                             anchors.rightMargin: 8
                             anchors.top: parent.top
-                            text: "Wi-Fi"
+                            text: controlCenter.networkCardTitle
                             color: textPrimary
                             font.pixelSize: 13
                             font.family: textFontFamily
@@ -1398,7 +1411,7 @@ Item {
                             anchors.right: wifiChevron.left
                             anchors.rightMargin: 8
                             anchors.bottom: parent.bottom
-                            text: wifiStatusText
+                            text: controlCenter.networkCardStatusText
                             color: controlCenter.textSecondary
                             font.pixelSize: 10
                             font.family: textFontFamily
