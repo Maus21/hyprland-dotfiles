@@ -2,6 +2,7 @@ import QtQuick
 import QtQuick.Shapes
 import Quickshell.Bluetooth
 import Quickshell.Io
+import Quickshell.Services.Pipewire
 import IslandBackend
 import "../connectivity" as Connectivity
 
@@ -56,6 +57,7 @@ Item {
     property bool brightnessSetterRunning: false
     property bool volumeSetterRunning: false
     property bool sliderIntroPending: false
+    property bool audioOutputDrawerOpen: false
     property bool wifiPanelOpen: false
     property bool bluetoothPanelOpen: false
     property bool batteryDrawerOpen: false
@@ -133,10 +135,20 @@ Item {
     readonly property real batteryModeCardHeight: 80
     readonly property real roundToggleButtonSize: 58
     readonly property real roundToggleButtonGap: 18
+    readonly property var audioOutputValues: Pipewire.nodes.values.filter(function(node) {
+        return node && node.isSink && !node.isStream && node.audio;
+    })
+    readonly property int audioOutputVisibleRows: Math.max(1, Math.min(4, audioOutputValues.length))
+    readonly property real audioOutputDrawerHeight: audioOutputDrawerOpen
+        ? 16 + audioOutputVisibleRows * 38
+        : 0
+    readonly property real audioOutputMaximumExtraHeight: 12 + 16 + 4 * 38
     readonly property real controlCenterExtraHeight: 12 + batteryDrawerHandleHeight
         + batteryDrawerProgress * (batteryDrawerContentGap + batteryModeCardHeight)
+        + (audioOutputDrawerOpen ? 12 + audioOutputDrawerHeight : 0)
     readonly property real controlCenterMaximumExtraHeight: 12 + batteryDrawerHandleHeight
         + batteryDrawerContentGap + batteryModeCardHeight
+        + audioOutputMaximumExtraHeight
     readonly property bool bluetoothAvailable: !!bluetoothAdapter
     readonly property var bluetoothAdapter: Bluetooth.defaultAdapter
     readonly property var bluetoothDeviceValues: bluetoothAdapter ? bluetoothAdapter.devices.values : []
@@ -191,6 +203,28 @@ Item {
     function trimString(value) {
         if (value === undefined || value === null) return "";
         return String(value).trim();
+    }
+
+    function audioOutputLabel(node) {
+        if (!node) return "No output";
+
+        const description = trimString(node.description);
+        if (description.length > 0) return description;
+
+        const nickname = trimString(node.nickname);
+        if (nickname.length > 0) return nickname;
+
+        const name = trimString(node.name);
+        return name.length > 0 ? name : "Audio output";
+    }
+
+    function selectAudioOutput(node) {
+        if (!node) return;
+
+        Pipewire.preferredDefaultAudioSink = node;
+        audioOutputDrawerOpen = false;
+        audioOutputRefreshTimer.restart();
+        requestNotification("Sound", "Audio output changed", audioOutputLabel(node));
     }
 
     function batteryModeLabel(index) {
@@ -862,6 +896,7 @@ Item {
             sliderIntroPending = false;
             displayedBrightness = localBrightness;
             displayedVolume = localVolume;
+            audioOutputDrawerOpen = false;
             closeConnectivityPanels();
         }
     }
@@ -1085,6 +1120,17 @@ Item {
         interval: 55
         repeat: false
         onTriggered: controlCenter.flushVolume(false)
+    }
+
+    Timer {
+        id: audioOutputRefreshTimer
+        interval: 180
+        repeat: false
+        onTriggered: SystemServices.requestVolume()
+    }
+
+    PwObjectTracker {
+        objects: controlCenter.audioOutputValues
     }
 
     Timer {
@@ -2186,6 +2232,174 @@ Item {
                 controlCenter.flushVolume(true);
             }
             onCancelRequested: SystemServices.requestVolume()
+
+            Item {
+                anchors.right: parent.right
+                anchors.rightMargin: 12
+                anchors.top: parent.top
+                anchors.topMargin: 7
+                width: Math.min(250, parent.width - 92)
+                height: 28
+                z: 4
+
+                Rectangle {
+                    anchors.fill: parent
+                    radius: 10
+                    color: audioOutputButtonArea.containsMouse
+                        ? controlCenter.moduleHover
+                        : StyleTokens.clearBlack
+
+                    Behavior on color {
+                        ColorAnimation {
+                            duration: StyleTokens.durationFast
+                        }
+                    }
+                }
+
+                Text {
+                    anchors.left: parent.left
+                    anchors.leftMargin: 8
+                    anchors.right: audioOutputChevron.left
+                    anchors.rightMargin: 6
+                    anchors.verticalCenter: parent.verticalCenter
+                    text: controlCenter.audioOutputLabel(Pipewire.defaultAudioSink)
+                    color: controlCenter.textSecondary
+                    font.pixelSize: 10
+                    font.family: controlCenter.textFontFamily
+                    font.weight: Font.Medium
+                    horizontalAlignment: Text.AlignRight
+                    elide: Text.ElideRight
+                }
+
+                Text {
+                    id: audioOutputChevron
+                    anchors.right: parent.right
+                    anchors.rightMargin: 8
+                    anchors.verticalCenter: parent.verticalCenter
+                    text: controlCenter.audioOutputDrawerOpen ? "⌃" : "⌄"
+                    color: controlCenter.audioOutputDrawerOpen
+                        ? controlCenter.textPrimary
+                        : controlCenter.textSecondary
+                    font.pixelSize: 13
+                    font.family: controlCenter.textFontFamily
+                    font.weight: Font.DemiBold
+                }
+
+                MouseArea {
+                    id: audioOutputButtonArea
+                    anchors.fill: parent
+                    hoverEnabled: true
+                    onClicked: controlCenter.audioOutputDrawerOpen = !controlCenter.audioOutputDrawerOpen
+                }
+            }
+        }
+
+        Rectangle {
+            id: audioOutputDrawer
+            width: parent.width
+            height: controlCenter.audioOutputDrawerHeight
+            visible: controlCenter.audioOutputDrawerOpen
+            radius: 20
+            color: StyleTokens.clearBlack
+            clip: true
+
+            MatteSurface {
+                anchors.fill: parent
+                radius: parent.radius
+                panelColor: controlCenter.panelColor
+                moduleColor: controlCenter.moduleColor
+                moduleHover: controlCenter.moduleHover
+                borderColor: controlCenter.trackColor
+                accentColor: controlCenter.cardAccentAlt
+            }
+
+            ListView {
+                id: audioOutputList
+                anchors.fill: parent
+                anchors.margins: 8
+                clip: true
+                spacing: 4
+                model: controlCenter.audioOutputValues
+                boundsBehavior: Flickable.StopAtBounds
+
+                delegate: Rectangle {
+                    id: audioOutputRow
+                    required property var modelData
+                    readonly property bool selected: modelData === Pipewire.defaultAudioSink
+                    width: audioOutputList.width
+                    height: 34
+                    radius: 12
+                    color: selected
+                        ? Qt.tint(controlCenter.moduleColor, Qt.rgba(1, 1, 1, 0.10))
+                        : (audioOutputRowArea.containsMouse ? controlCenter.moduleHover : StyleTokens.clearBlack)
+
+                    Text {
+                        anchors.left: parent.left
+                        anchors.leftMargin: 12
+                        anchors.right: audioOutputSelectedMark.left
+                        anchors.rightMargin: 8
+                        anchors.verticalCenter: parent.verticalCenter
+                        text: controlCenter.audioOutputLabel(audioOutputRow.modelData)
+                        color: audioOutputRow.selected ? controlCenter.textPrimary : controlCenter.textSecondary
+                        font.pixelSize: 11
+                        font.family: controlCenter.textFontFamily
+                        font.weight: audioOutputRow.selected ? Font.DemiBold : Font.Medium
+                        elide: Text.ElideRight
+                    }
+
+                    Text {
+                        id: audioOutputSelectedMark
+                        anchors.right: parent.right
+                        anchors.rightMargin: 12
+                        anchors.verticalCenter: parent.verticalCenter
+                        text: "✓"
+                        visible: audioOutputRow.selected
+                        color: controlCenter.cardAccentAlt
+                        font.pixelSize: 13
+                        font.family: controlCenter.textFontFamily
+                        font.weight: Font.Bold
+                    }
+
+                    MouseArea {
+                        id: audioOutputRowArea
+                        anchors.fill: parent
+                        hoverEnabled: true
+                        onClicked: controlCenter.selectAudioOutput(audioOutputRow.modelData)
+                    }
+                }
+
+                Rectangle {
+                    anchors.centerIn: parent
+                    width: parent.width
+                    height: 34
+                    visible: controlCenter.audioOutputValues.length === 0
+                    color: StyleTokens.clearBlack
+
+                    Text {
+                        anchors.centerIn: parent
+                        text: Pipewire.ready ? "No audio outputs found" : "Loading audio outputs…"
+                        color: controlCenter.textSecondary
+                        font.pixelSize: 11
+                        font.family: controlCenter.textFontFamily
+                        font.weight: Font.Medium
+                    }
+                }
+
+                Rectangle {
+                    anchors.right: parent.right
+                    anchors.rightMargin: 2
+                    width: 3
+                    height: Math.max(18, audioOutputList.height * audioOutputList.height / Math.max(1, audioOutputList.contentHeight))
+                    y: audioOutputList.contentHeight <= audioOutputList.height
+                        ? 0
+                        : (audioOutputList.height - height)
+                            * audioOutputList.contentY
+                            / (audioOutputList.contentHeight - audioOutputList.height)
+                    radius: 2
+                    color: controlCenter.textSecondary
+                    opacity: audioOutputList.contentHeight > audioOutputList.height ? 0.7 : 0
+                }
+            }
         }
     }
 
