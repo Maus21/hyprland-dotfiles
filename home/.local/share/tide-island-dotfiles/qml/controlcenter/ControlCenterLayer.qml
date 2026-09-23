@@ -99,6 +99,8 @@ Item {
     property string bluetoothError: ""
     property string bluetoothPairAndConnectPath: ""
     property string bluetoothPendingSecretValue: ""
+    property var bluetoothFallbackBatteryLevels: ({})
+    property var bluetoothBatteryScanPending: ({})
     readonly property var wifiController: WifiController
     readonly property var bluetoothPairingAgent: BluetoothPairingAgent
     readonly property var wifiNetworks: wifiController ? wifiController.networks : null
@@ -192,6 +194,15 @@ Item {
         ? networkStatus.statusText
         : wifiStatusText
     readonly property string bluetoothStatusText: buildBluetoothStatusText()
+    readonly property int bluetoothStatusBatteryPercent: {
+        const devices = bluetoothDeviceValues || [];
+        for (let index = 0; index < devices.length; index++) {
+            const device = devices[index];
+            if (device && device.connected)
+                return bluetoothBatteryPercent(device);
+        }
+        return -1;
+    }
     readonly property string bluetoothAvailabilityMessage: bluetoothAvailable ? "" : "No Bluetooth adapter is available."
     readonly property string batteryModeStatusText: buildBatteryModeStatusText()
     readonly property bool tlpControlsEnabled: trimString(userConfig.tlpPermissionMode) !== "skip"
@@ -760,16 +771,49 @@ Item {
         const parts = [];
         const stateLabel = bluetoothDeviceStateText(device);
         if (stateLabel.length > 0) parts.push(stateLabel);
-        if (device && device.batteryAvailable) parts.push(bluetoothBatteryPercent(device) + "%");
+        const batteryPercent = bluetoothBatteryPercent(device);
+        if (batteryPercent >= 0) parts.push(batteryPercent + "%");
         return parts.join(" • ");
     }
 
     function bluetoothBatteryPercent(device) {
-        if (!device || !device.batteryAvailable)
+        if (!device) return -1;
+
+        if (device.batteryAvailable) {
+            const rawValue = Math.max(0, Number(device.battery) || 0);
+            return Math.max(0, Math.min(100, Math.round(rawValue <= 1 ? rawValue * 100 : rawValue)));
+        }
+
+        const address = trimString(device.address).toLowerCase();
+        if (address.length === 0 || bluetoothFallbackBatteryLevels[address] === undefined)
             return -1;
 
-        const rawValue = Math.max(0, Number(device.battery) || 0);
-        return Math.max(0, Math.min(100, Math.round(rawValue <= 1 ? rawValue * 100 : rawValue)));
+        return Math.max(0, Math.min(100, Math.round(Number(bluetoothFallbackBatteryLevels[address]))));
+    }
+
+    function bluetoothBatteryColor(percent) {
+        if (percent <= 20) return errorColor;
+        if (percent <= 60) return warningColor;
+        return successColor;
+    }
+
+    function refreshBluetoothBatteryLevels() {
+        if (bluetoothBatteryScanProcess.running)
+            return;
+
+        bluetoothBatteryScanPending = ({});
+        bluetoothBatteryScanProcess.running = true;
+    }
+
+    function recordBluetoothFallbackBattery(line) {
+        const fields = trimString(line).split("=");
+        if (fields.length !== 2)
+            return;
+
+        const address = trimString(fields[0]).toLowerCase();
+        const percent = Number(fields[1]);
+        if (address.length === 17 && isFinite(percent))
+            bluetoothBatteryScanPending[address] = Math.max(0, Math.min(100, Math.round(percent)));
     }
 
     function bluetoothDeviceMatchesSection(device, section) {
@@ -888,6 +932,7 @@ Item {
             sliderIntroTimer.interval = sliderIntroDelay;
             sliderIntroTimer.restart();
             refreshBatteryModeState();
+            refreshBluetoothBatteryLevels();
             requestWifiStateRefresh();
             if (wifiPanelOpen && wifiSupported && wifiEnabled)
                 requestWifiListRefresh(true);
@@ -908,6 +953,7 @@ Item {
         SystemServices.requestBrightness();
         SystemServices.requestVolume();
         refreshBatteryModeState();
+        refreshBluetoothBatteryLevels();
     }
 
     Behavior on opacity {
@@ -967,6 +1013,34 @@ Item {
                     : "power-profiles-daemon is unavailable.");
             console.info("[PowerProfile] State:", exitCode, profile, errorText);
             controlCenter.applyBatteryModeState(exitCode === 0, profile, profile, errorText);
+        }
+    }
+
+    Process {
+        id: bluetoothBatteryScanProcess
+        command: [
+            "sh",
+            "-c",
+            "for battery in /sys/class/power_supply/*; do\n"
+                + "  [ -r \"$battery/capacity\" ] || continue\n"
+                + "  [ \"$(cat \"$battery/scope\" 2>/dev/null)\" = \"Device\" ] || continue\n"
+                + "  identity=\"$(basename \"$battery\") $(readlink -f \"$battery\" 2>/dev/null)\"\n"
+                + "  address=$(printf '%s\\n' \"$identity\" | sed -nE 's/.*(([[:xdigit:]]{2}:){5}[[:xdigit:]]{2}).*/\\1/p' | head -n 1 | tr '[:upper:]' '[:lower:]')\n"
+                + "  [ -n \"$address\" ] || continue\n"
+                + "  capacity=$(cat \"$battery/capacity\" 2>/dev/null)\n"
+                + "  case \"$capacity\" in ''|*[!0-9]*) continue ;; esac\n"
+                + "  printf '%s=%s\\n' \"$address\" \"$capacity\"\n"
+                + "done"
+        ]
+        running: false
+
+        stdout: SplitParser {
+            onRead: data => controlCenter.recordBluetoothFallbackBattery(data)
+        }
+
+        onExited: function(exitCode) {
+            if (exitCode === 0)
+                controlCenter.bluetoothFallbackBatteryLevels = controlCenter.bluetoothBatteryScanPending;
         }
     }
 
@@ -1175,6 +1249,14 @@ Item {
     }
 
     Timer {
+        id: bluetoothBatteryRefreshTimer
+        interval: 30000
+        repeat: true
+        running: controlCenter.bluetoothEnabled && controlCenter.showCondition
+        onTriggered: controlCenter.refreshBluetoothBatteryLevels()
+    }
+
+    Timer {
         id: batteryDrawerSettleTimer
         interval: 300
         repeat: false
@@ -1198,13 +1280,23 @@ Item {
                 controlCenter.bluetoothPairAndConnectPath = "";
                 controlCenter.bluetoothInfoMessage = "";
                 controlCenter.bluetoothError = "";
+                controlCenter.bluetoothFallbackBatteryLevels = ({});
                 bluetoothScanStopTimer.stop();
-            }
+            } else
+                controlCenter.refreshBluetoothBatteryLevels();
         }
 
         function onDiscoveringChanged() {
             if (!controlCenter.bluetoothAdapter.discovering)
                 bluetoothScanStopTimer.stop();
+        }
+    }
+
+    Connections {
+        target: controlCenter.bluetoothAdapter ? controlCenter.bluetoothAdapter.devices : null
+
+        function onValuesChanged() {
+            controlCenter.refreshBluetoothBatteryLevels();
         }
     }
 
@@ -1585,7 +1677,9 @@ Item {
 
                         Text {
                             anchors.left: parent.left
-                            anchors.right: bluetoothChevron.left
+                            anchors.right: bluetoothBatteryLabel.visible
+                                ? bluetoothBatteryLabel.left
+                                : bluetoothChevron.left
                             anchors.rightMargin: 8
                             anchors.bottom: parent.bottom
                             text: bluetoothStatusText
@@ -1594,6 +1688,25 @@ Item {
                             font.family: textFontFamily
                             font.weight: Font.Medium
                             elide: Text.ElideRight
+                        }
+
+                        Text {
+                            id: bluetoothBatteryLabel
+                            anchors.right: bluetoothChevron.left
+                            anchors.rightMargin: 7
+                            anchors.bottom: parent.bottom
+                            visible: controlCenter.bluetoothStatusBatteryPercent >= 0
+                            text: controlCenter.bluetoothStatusBatteryPercent + "%"
+                            color: controlCenter.bluetoothBatteryColor(controlCenter.bluetoothStatusBatteryPercent)
+                            font.pixelSize: 10
+                            font.family: textFontFamily
+                            font.weight: Font.DemiBold
+
+                            Behavior on color {
+                                ColorAnimation {
+                                    duration: StyleTokens.durationFast
+                                }
+                            }
                         }
 
                         Text {
