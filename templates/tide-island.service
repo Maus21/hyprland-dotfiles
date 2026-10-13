@@ -6,7 +6,7 @@ BindsTo=graphical-session.target
 [Service]
 Type=simple
 Environment=TIDE_ISLAND_QML_PATH=%h/.local/share/tide-island-dotfiles
-ExecStart=/usr/bin/tide-island
+ExecStart=%h/.local/bin/tide-island-dotfiles-backend
 Restart=on-failure
 RestartSec=3
 

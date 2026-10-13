@@ -12,6 +12,8 @@ Item {
     property bool ethernetConnected: false
     property string ethernetDevice: ""
     property string ethernetConnection: ""
+    property bool ethernetBusy: false
+    property string ethernetError: ""
     property bool wifiConnected: false
     property string wifiDevice: ""
     property string wifiConnection: ""
@@ -74,6 +76,9 @@ Item {
             const connection = fields.slice(3).join(":").trim();
             const isConnected = state.indexOf("connected") === 0;
 
+            if (type === "ethernet" && !nextEthernetDevice)
+                nextEthernetDevice = device;
+
             if (!isConnected)
                 continue;
 
@@ -106,6 +111,20 @@ Item {
         snapshotLines = [];
         snapshotProcess.running = true;
     }
+
+    function toggleEthernet() {
+        if (!managerAvailable || !ethernetDevice || ethernetBusy)
+            return;
+
+        ethernetError = "";
+        ethernetCommandError = "";
+        ethernetCommand.command = ["nmcli", "--wait", "15", "device",
+            ethernetConnected ? "disconnect" : "connect", ethernetDevice];
+        ethernetBusy = true;
+        ethernetCommand.running = true;
+    }
+
+    property string ethernetCommandError: ""
 
     Component.onCompleted: refresh()
 
@@ -147,6 +166,22 @@ Item {
                 root.refreshQueued = false;
                 refreshDebounce.restart();
             }
+        }
+    }
+
+    Process {
+        id: ethernetCommand
+        running: false
+
+        stderr: SplitParser {
+            onRead: data => root.ethernetCommandError += String(data)
+        }
+
+        onExited: function(exitCode) {
+            root.ethernetBusy = false;
+            if (exitCode !== 0)
+                root.ethernetError = root.ethernetCommandError.trim() || "Could not change Ethernet connection.";
+            root.refresh();
         }
     }
 

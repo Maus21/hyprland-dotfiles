@@ -94,3 +94,22 @@ does not install those applications. To switch the login shell after install:
 ```bash
 chsh -s /usr/bin/fish
 ```
+
+## Tide Island 1.0.41 Wi-Fi backend
+
+Tide Island 1.0.41-1 marks its Wi-Fi and Bluetooth pairing singletons as
+uncreatable, leaving both unavailable in QML. Build the patched backend from
+the cached AUR source archive with:
+
+```bash
+./scripts/build-tide-island-backend.sh
+sudo ./scripts/enable-internal-wifi.sh
+systemctl --user daemon-reload
+systemctl --user restart tide-island-dotfiles.service
+```
+
+The user service loads this local backend only while `tide-island 1.0.41-1` is
+installed. After a package upgrade, it uses the packaged backend again. The
+internal RTL8822CE adapter is currently blacklisted by
+`/etc/modprobe.d/disable-internal-wifi.conf`; the enable script moves that
+file to a `.disabled` backup and loads the driver.

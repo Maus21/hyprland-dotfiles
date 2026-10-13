@@ -1,0 +1,9 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+if [[ -r "$HOME/.local/lib/libIslandBackend.so" ]] \
+  && [[ "$(pacman -Q tide-island 2>/dev/null)" == "tide-island 1.0.41-1" ]]; then
+  export LD_LIBRARY_PATH="$HOME/.local/lib${LD_LIBRARY_PATH:+:$LD_LIBRARY_PATH}"
+fi
+
+exec /usr/bin/tide-island "$@"

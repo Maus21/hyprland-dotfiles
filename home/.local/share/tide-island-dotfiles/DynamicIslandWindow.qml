@@ -501,6 +501,8 @@ PanelWindow {
 
     function setConnectivityDetailVisible(kind, open) {
         const nextOpen = !!open;
+        if (nextOpen && !islandContainer.controlCenterLayerVisible)
+            return;
 
         if (kind === "wifi") {
             if (nextOpen) {
@@ -947,9 +949,8 @@ PanelWindow {
         onControlCenterLayerVisibleChanged: {
             if (!controlCenterLayerVisible) {
                 if (controlCenterLoader.item)
-                    controlCenterLoader.item.closeConnectivityPanels();
-                else
-                    root.closeAllConnectivityDetails();
+                    controlCenterLoader.item.closeConnectivityPanels(false);
+                root.closeAllConnectivityDetails();
             }
         }
 
@@ -2862,6 +2863,7 @@ PanelWindow {
 
             open: root.wifiConnectivityDetailOpen
             mounted: root.wifiConnectivityDetailMounted
+            hostVisible: islandContainer.controlCenterLayerVisible
             rightSide: false
             panelKind: "wifi"
             provider: controlCenterLoader.item
@@ -2891,6 +2893,7 @@ PanelWindow {
 
             open: root.bluetoothConnectivityDetailOpen
             mounted: root.bluetoothConnectivityDetailMounted
+            hostVisible: islandContainer.controlCenterLayerVisible
             rightSide: true
             panelKind: "bluetooth"
             provider: controlCenterLoader.item

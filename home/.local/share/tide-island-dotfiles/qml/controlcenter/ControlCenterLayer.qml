@@ -13,6 +13,14 @@ Item {
         id: networkStatus
     }
 
+    Connections {
+        target: networkStatus
+        function onEthernetConnectedChanged() {
+            if (networkStatus.ethernetConnected)
+                controlCenter.ethernetCardPinned = false;
+        }
+    }
+
     signal connectivityPanelRequested(string kind, bool open)
     signal focusModeChanged(bool enabled)
     signal nightLightModeChanged(bool enabled)
@@ -59,6 +67,7 @@ Item {
     property bool sliderIntroPending: false
     property bool audioOutputDrawerOpen: false
     property bool wifiPanelOpen: false
+    property bool ethernetCardPinned: false
     property bool bluetoothPanelOpen: false
     property bool batteryDrawerOpen: false
     property bool batteryDrawerDragging: false
@@ -102,8 +111,13 @@ Item {
     property var bluetoothFallbackBatteryLevels: ({})
     property var bluetoothBatteryScanPending: ({})
     readonly property var wifiController: WifiController
+    readonly property bool wifiControllerReady: !!wifiController
+        && typeof wifiController.refreshState === "function"
+        && typeof wifiController.setEnabled === "function"
     readonly property var bluetoothPairingAgent: BluetoothPairingAgent
-    readonly property var wifiNetworks: wifiController ? wifiController.networks : null
+    readonly property bool bluetoothPairingAgentReady: !!bluetoothPairingAgent
+        && typeof bluetoothPairingAgent.cancelRequest === "function"
+    readonly property var wifiNetworks: wifiControllerReady ? wifiController.networks : null
 
     readonly property real sliderKnobSize: 24
     property color panelColor: "#12151e"
@@ -154,20 +168,22 @@ Item {
     readonly property bool bluetoothAvailable: !!bluetoothAdapter
     readonly property var bluetoothAdapter: Bluetooth.defaultAdapter
     readonly property var bluetoothDeviceValues: bluetoothAdapter ? bluetoothAdapter.devices.values : []
-    readonly property bool wifiSupported: wifiController ? wifiController.supported : false
-    readonly property bool wifiReadOnly: wifiController ? wifiController.readOnly : true
-    readonly property bool wifiAvailable: wifiController ? wifiController.available : false
-    readonly property bool wifiEnabled: wifiController ? wifiController.enabled : false
-    readonly property bool wifiBusy: wifiController ? wifiController.busy : false
-    readonly property bool wifiListRunning: wifiController ? wifiController.scanning : false
-    readonly property string wifiCurrentSsid: wifiController ? wifiController.currentSsid : ""
+    readonly property bool wifiSupported: wifiControllerReady ? !!wifiController.supported : false
+    readonly property bool wifiReadOnly: wifiControllerReady ? !!wifiController.readOnly : true
+    readonly property bool wifiAvailable: wifiControllerReady ? !!wifiController.available : false
+    readonly property bool wifiEnabled: wifiControllerReady ? !!wifiController.enabled : false
+    readonly property bool wifiBusy: wifiControllerReady ? !!wifiController.busy : false
+    readonly property bool wifiListRunning: wifiControllerReady ? !!wifiController.scanning : false
+    readonly property string wifiCurrentSsid: wifiControllerReady ? trimString(wifiController.currentSsid) : ""
     readonly property string wifiInfoMessage: wifiLocalInfoMessage.length > 0
         ? wifiLocalInfoMessage
-        : (wifiController ? wifiController.infoMessage : "")
+        : (wifiControllerReady ? trimString(wifiController.infoMessage) : "")
     readonly property string wifiError: wifiLocalError.length > 0
         ? wifiLocalError
-        : (wifiController ? wifiController.errorMessage : "")
-    readonly property string wifiUnsupportedReason: wifiController ? wifiController.unsupportedReason : ""
+        : (wifiControllerReady ? trimString(wifiController.errorMessage) : "")
+    readonly property string wifiUnsupportedReason: wifiControllerReady
+        ? trimString(wifiController.unsupportedReason)
+        : "Wi-Fi controls are unavailable in this Tide Island build."
     readonly property string wifiAvailabilityMessage: {
         if (wifiUnsupportedReason.length > 0) return wifiUnsupportedReason;
         if (wifiSupported && !wifiAvailable) return "No Wi-Fi device is available.";
@@ -178,20 +194,30 @@ Item {
         ? bluetoothAdapter.state === BluetoothAdapterState.Enabling
             || bluetoothAdapter.state === BluetoothAdapterState.Disabling
         : false
-    readonly property bool bluetoothPairingActive: bluetoothPairingAgent ? bluetoothPairingAgent.requestActive : false
-    readonly property bool bluetoothPairingRequiresInput: bluetoothPairingAgent ? bluetoothPairingAgent.requestRequiresInput : false
-    readonly property bool bluetoothPairingNumericInput: bluetoothPairingAgent ? bluetoothPairingAgent.requestNumericInput : false
-    readonly property bool bluetoothPairingRequiresConfirmation: bluetoothPairingAgent ? bluetoothPairingAgent.requestRequiresConfirmation : false
-    readonly property string bluetoothPairingTitle: bluetoothPairingAgent ? bluetoothPairingAgent.promptTitle : ""
-    readonly property string bluetoothPairingMessage: bluetoothPairingAgent ? bluetoothPairingAgent.promptMessage : ""
-    readonly property string bluetoothPairingDisplayedCode: bluetoothPairingAgent ? bluetoothPairingAgent.displayedCode : ""
+    readonly property bool bluetoothPairingActive: bluetoothPairingAgentReady ? !!bluetoothPairingAgent.requestActive : false
+    readonly property bool bluetoothPairingRequiresInput: bluetoothPairingAgentReady ? !!bluetoothPairingAgent.requestRequiresInput : false
+    readonly property bool bluetoothPairingNumericInput: bluetoothPairingAgentReady ? !!bluetoothPairingAgent.requestNumericInput : false
+    readonly property bool bluetoothPairingRequiresConfirmation: bluetoothPairingAgentReady ? !!bluetoothPairingAgent.requestRequiresConfirmation : false
+    readonly property string bluetoothPairingTitle: bluetoothPairingAgentReady ? trimString(bluetoothPairingAgent.promptTitle) : ""
+    readonly property string bluetoothPairingMessage: bluetoothPairingAgentReady ? trimString(bluetoothPairingAgent.promptMessage) : ""
+    readonly property string bluetoothPairingDisplayedCode: bluetoothPairingAgentReady ? trimString(bluetoothPairingAgent.displayedCode) : ""
     readonly property bool hasConnectivityPrompt: wifiPendingPasswordSsid.length > 0 || bluetoothPairingActive
     readonly property bool anyConnectivityPanelOpen: wifiPanelOpen || bluetoothPanelOpen
-    readonly property string wifiStatusText: wifiController ? wifiController.statusText : "Unavailable"
-    readonly property string networkCardGlyph: networkStatus.ethernetConnected ? ethernetGlyph : wifiGlyph
-    readonly property string networkCardTitle: networkStatus.ethernetConnected ? "Ethernet" : "Wi-Fi"
-    readonly property string networkCardStatusText: networkStatus.ethernetConnected
-        ? networkStatus.statusText
+    readonly property string wifiStatusText: wifiControllerReady
+        ? trimString(wifiController.statusText) : "Unavailable"
+    readonly property bool ethernetConnected: networkStatus.ethernetConnected
+    readonly property string ethernetDevice: networkStatus.ethernetDevice
+    readonly property string ethernetConnection: networkStatus.ethernetConnection
+    readonly property bool ethernetBusy: networkStatus.ethernetBusy
+    readonly property string ethernetError: networkStatus.ethernetError
+    readonly property bool networkCardUsesEthernet: networkStatus.ethernetConnected
+        || (networkStatus.ethernetDevice.length > 0 && (ethernetCardPinned || !networkStatus.wifiConnected))
+    readonly property bool networkCardEnabled: networkCardUsesEthernet
+        ? networkStatus.ethernetConnected : wifiEnabled
+    readonly property string networkCardGlyph: networkCardUsesEthernet ? ethernetGlyph : wifiGlyph
+    readonly property string networkCardTitle: networkCardUsesEthernet ? "Ethernet" : "Wi-Fi"
+    readonly property string networkCardStatusText: networkCardUsesEthernet
+        ? (networkStatus.ethernetConnected ? networkStatus.statusText : "Disconnected")
         : wifiStatusText
     readonly property string bluetoothStatusText: buildBluetoothStatusText()
     readonly property int bluetoothStatusBatteryPercent: {
@@ -452,7 +478,7 @@ Item {
     function clearWifiMessages() {
         wifiLocalInfoMessage = "";
         wifiLocalError = "";
-        if (wifiController)
+        if (wifiControllerReady && typeof wifiController.clearMessages === "function")
             wifiController.clearMessages();
     }
 
@@ -462,7 +488,7 @@ Item {
     }
 
     function submitBluetoothPairingSecret() {
-        if (!bluetoothPairingAgent || !bluetoothPairingRequiresInput)
+        if (!bluetoothPairingAgentReady || !bluetoothPairingRequiresInput)
             return;
 
         const secret = trimString(bluetoothPendingSecretValue);
@@ -484,7 +510,7 @@ Item {
     }
 
     function confirmBluetoothPairing() {
-        if (!bluetoothPairingAgent)
+        if (!bluetoothPairingAgentReady)
             return;
 
         bluetoothError = "";
@@ -492,7 +518,7 @@ Item {
     }
 
     function cancelBluetoothPairing() {
-        if (!bluetoothPairingAgent)
+        if (!bluetoothPairingAgentReady)
             return;
 
         bluetoothPairingAgent.cancelRequest();
@@ -510,6 +536,8 @@ Item {
             emitSignal = true;
 
         const nextOpen = !!open;
+        if (nextOpen && !showCondition)
+            return;
         let changed = false;
 
         if (kind === "wifi") {
@@ -564,21 +592,38 @@ Item {
     }
 
     function requestWifiStateRefresh() {
-        if (!showCondition || !wifiController) return;
+        if (!showCondition || !wifiControllerReady) return;
         wifiController.refreshState();
     }
 
     function requestWifiListRefresh(rescan) {
-        if (!showCondition || !wifiController) return;
+        if (!showCondition || !wifiControllerReady) return;
         if (!wifiSupported || !wifiAvailable || !wifiEnabled) return;
-        wifiController.refreshNetworks(!!rescan);
+        if (typeof wifiController.refreshNetworks === "function")
+            wifiController.refreshNetworks(!!rescan);
     }
 
     function toggleWifiEnabled() {
         clearWifiPrompt();
         clearWifiMessages();
-        if (wifiController)
+        if (wifiControllerReady)
             wifiController.setEnabled(!wifiEnabled);
+    }
+
+    function toggleNetworkCard() {
+        if (networkCardUsesEthernet) {
+            toggleEthernet();
+        } else {
+            toggleWifiEnabled();
+        }
+    }
+
+    function toggleEthernet() {
+        if (!networkStatus.managerAvailable || !networkStatus.ethernetDevice || networkStatus.ethernetBusy)
+            return;
+        if (networkCardUsesEthernet)
+            ethernetCardPinned = true;
+        networkStatus.toggleEthernet();
     }
 
     function disconnectWifi() {
@@ -589,7 +634,7 @@ Item {
 
         clearWifiPrompt();
         clearWifiMessages();
-        if (wifiController)
+        if (wifiControllerReady && typeof wifiController.disconnectCurrent === "function")
             wifiController.disconnectCurrent();
     }
 
@@ -633,13 +678,13 @@ Item {
         clearWifiMessages();
 
         if (savedConnection) {
-            if (wifiController)
+            if (wifiControllerReady && typeof wifiController.connectToNetwork === "function")
                 wifiController.connectToNetwork(ssid);
             return;
         }
 
         if (!secure) {
-            if (wifiController)
+            if (wifiControllerReady && typeof wifiController.connectToNetwork === "function")
                 wifiController.connectToNetwork(ssid);
             return;
         }
@@ -661,7 +706,7 @@ Item {
         const password = wifiPendingPasswordValue;
         clearWifiPrompt();
         clearWifiMessages();
-        if (wifiController)
+        if (wifiControllerReady && typeof wifiController.connectToNetwork === "function")
             wifiController.connectToNetwork(ssid, password);
     }
 
@@ -1264,7 +1309,7 @@ Item {
     }
 
     Connections {
-        target: wifiController
+        target: wifiControllerReady ? wifiController : null
 
         function onEnabledChanged() {
             if (!controlCenter.wifiEnabled)
@@ -1301,7 +1346,7 @@ Item {
     }
 
     Connections {
-        target: bluetoothPairingAgent
+        target: bluetoothPairingAgentReady ? bluetoothPairingAgent : null
 
         function onRequestChanged() {
             controlCenter.bluetoothPendingSecretValue = "";
@@ -1312,7 +1357,7 @@ Item {
         }
 
         function onRegistrationErrorChanged() {
-            if (!controlCenter.bluetoothPairingAgent)
+            if (!controlCenter.bluetoothPairingAgentReady)
                 return;
 
             if (!controlCenter.bluetoothPairingAgent.registered
@@ -1465,6 +1510,7 @@ Item {
                         id: wifiCardMouse
                         anchors.fill: parent
                         hoverEnabled: true
+                        onClicked: controlCenter.toggleConnectivityOverlay("wifi")
                     }
 
                     Text {
@@ -1473,7 +1519,7 @@ Item {
                         anchors.top: parent.top
                         anchors.topMargin: 12
                         text: controlCenter.networkCardGlyph
-                        color: networkStatus.ethernetConnected
+                        color: controlCenter.networkCardUsesEthernet
                             ? controlCenter.cardAccentAlt
                             : (controlCenter.wifiEnabled ? controlCenter.cardAccent : controlCenter.textSecondary)
                         font.pixelSize: 18
@@ -1489,7 +1535,8 @@ Item {
                         width: 34
                         height: 20
                         radius: 10
-                        color: wifiEnabled ? controlCenter.successColor : controlCenter.textSecondary
+                        color: controlCenter.networkCardEnabled
+                            ? controlCenter.successColor : controlCenter.textSecondary
 
                         Behavior on color {
                             ColorAnimation {
@@ -1502,7 +1549,7 @@ Item {
                             height: 16
                             radius: 8
                             y: 2
-                            x: wifiEnabled ? 16 : 2
+                            x: controlCenter.networkCardEnabled ? 16 : 2
                             color: controlCenter.selectedTextColor
 
                             Behavior on x {
@@ -1516,8 +1563,10 @@ Item {
                         MouseArea {
                             id: wifiToggleArea
                             anchors.fill: parent
-                            enabled: wifiSupported && wifiAvailable && !wifiBusy
-                            onClicked: controlCenter.toggleWifiEnabled()
+                            enabled: controlCenter.networkCardUsesEthernet
+                                ? networkStatus.managerAvailable && !networkStatus.ethernetBusy
+                                : wifiSupported && wifiAvailable && !wifiBusy
+                            onClicked: controlCenter.toggleNetworkCard()
                         }
                     }
 
@@ -1598,6 +1647,7 @@ Item {
                         id: bluetoothCardMouse
                         anchors.fill: parent
                         hoverEnabled: true
+                        onClicked: controlCenter.toggleConnectivityOverlay("bluetooth")
                     }
 
                     Text {

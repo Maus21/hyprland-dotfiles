@@ -5,6 +5,7 @@ Item {
 
     property bool open: false
     property bool mounted: false
+    property bool hostVisible: false
     property bool rightSide: false
     property string panelKind: "wifi"
     property var provider: null
@@ -65,7 +66,7 @@ Item {
     width: detailWidth
     height: detailHeight
     opacity: revealProgress
-    visible: mounted || opacity > 0.001
+    visible: hostVisible && (mounted || opacity > 0.001)
     z: 3
 
     onOpenChanged: startPanelAnimation(open)
@@ -92,7 +93,7 @@ Item {
 
         Loader {
             anchors.fill: parent
-            active: shell.mounted
+            active: shell.hostVisible && shell.mounted
             asynchronous: false
             visible: active
 

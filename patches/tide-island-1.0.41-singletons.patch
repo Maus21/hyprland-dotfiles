@@ -1,0 +1,8 @@
+--- a/backend/WifiController.h
++++ b/backend/WifiController.h
+@@ -28 +27,0 @@
+-    QML_UNCREATABLE("Singleton")
+--- a/backend/BluetoothPairingAgent.h
++++ b/backend/BluetoothPairingAgent.h
+@@ -18 +17,0 @@
+-    QML_UNCREATABLE("Singleton")

@@ -119,7 +119,9 @@ Item {
 
             Text {
                 anchors.verticalCenter: parent.verticalCenter
-                text: root.isWifi ? "Wi-Fi" : "Bluetooth"
+                text: root.isWifi
+                    ? (root.provider && root.provider.ethernetDevice.length > 0 ? "Network" : "Wi-Fi")
+                    : "Bluetooth"
                 color: root.textPrimary
                 font.pixelSize: 15
                 font.family: root.heroFontFamily
@@ -134,6 +136,128 @@ Item {
             anchors.top: headerRow.bottom
             anchors.topMargin: 14
             spacing: 10
+
+            Rectangle {
+                width: parent.width
+                height: visible ? 64 : 0
+                radius: 16
+                color: root.moduleColor
+                visible: root.isWifi && root.provider && root.provider.ethernetDevice.length > 0
+
+                Text {
+                    anchors.left: parent.left
+                    anchors.leftMargin: 14
+                    anchors.right: ethernetAction.left
+                    anchors.rightMargin: 8
+                    anchors.top: parent.top
+                    anchors.topMargin: 13
+                    text: "Ethernet"
+                    color: root.textPrimary
+                    font.pixelSize: 12
+                    font.family: root.textFontFamily
+                    font.weight: Font.DemiBold
+                }
+
+                Text {
+                    anchors.left: parent.left
+                    anchors.leftMargin: 14
+                    anchors.right: ethernetAction.left
+                    anchors.rightMargin: 8
+                    anchors.bottom: parent.bottom
+                    anchors.bottomMargin: 13
+                    text: root.provider
+                        ? (root.provider.ethernetConnected
+                            ? (root.provider.ethernetConnection || "Connected")
+                            : "Disconnected")
+                        : ""
+                    color: root.textSecondary
+                    font.pixelSize: 11
+                    font.family: root.textFontFamily
+                    elide: Text.ElideRight
+                }
+
+                Rectangle {
+                    id: ethernetAction
+                    anchors.right: parent.right
+                    anchors.rightMargin: 12
+                    anchors.verticalCenter: parent.verticalCenter
+                    width: 86
+                    height: 32
+                    radius: 12
+                    color: root.moduleHover
+
+                    Text {
+                        anchors.centerIn: parent
+                        text: root.provider && root.provider.ethernetBusy
+                            ? "Working..."
+                            : (root.provider && root.provider.ethernetConnected ? "Disconnect" : "Connect")
+                        color: root.textPrimary
+                        font.pixelSize: 10
+                        font.family: root.textFontFamily
+                        font.weight: Font.DemiBold
+                    }
+
+                    MouseArea {
+                        anchors.fill: parent
+                        enabled: root.provider && !root.provider.ethernetBusy
+                        onClicked: root.provider.toggleEthernet()
+                    }
+                }
+            }
+
+            Text {
+                width: parent.width
+                height: visible ? implicitHeight : 0
+                visible: root.isWifi && root.provider && root.provider.ethernetError.length > 0
+                text: root.provider ? root.provider.ethernetError : ""
+                color: root.errorColor
+                font.pixelSize: 11
+                font.family: root.textFontFamily
+                wrapMode: Text.Wrap
+            }
+
+            Item {
+                width: parent.width
+                height: visible ? 28 : 0
+                visible: root.isWifi && root.provider
+                    && root.provider.ethernetDevice.length > 0
+                    && root.provider.wifiSupported && root.provider.wifiAvailable
+
+                Text {
+                    anchors.left: parent.left
+                    anchors.verticalCenter: parent.verticalCenter
+                    text: "Wi-Fi"
+                    color: root.textPrimary
+                    font.pixelSize: 12
+                    font.family: root.textFontFamily
+                    font.weight: Font.DemiBold
+                }
+
+                Rectangle {
+                    anchors.right: parent.right
+                    anchors.verticalCenter: parent.verticalCenter
+                    width: 34
+                    height: 20
+                    radius: 10
+                    color: root.provider && root.provider.wifiEnabled
+                        ? root.successColor : root.textSecondary
+
+                    Rectangle {
+                        width: 16
+                        height: 16
+                        radius: 8
+                        y: 2
+                        x: root.provider && root.provider.wifiEnabled ? 16 : 2
+                        color: root.selectedTextColor
+                    }
+
+                    MouseArea {
+                        anchors.fill: parent
+                        enabled: root.provider && !root.provider.wifiBusy
+                        onClicked: root.provider.toggleWifiEnabled()
+                    }
+                }
+            }
 
             Rectangle {
                 width: parent.width
